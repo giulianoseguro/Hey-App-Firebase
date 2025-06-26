@@ -8,6 +8,7 @@ interface DataContextType {
   transactions: Transaction[]
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void
   deleteTransaction: (id: string) => void
+  updateTransaction: (id: string, data: Omit<Transaction, 'id'>) => void
   inventory: InventoryItem[]
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void
   isDataReady: boolean
@@ -30,6 +31,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTransactions((prev) => prev.filter((t) => t.id !== id))
   }
 
+  const updateTransaction = (id: string, data: Omit<Transaction, 'id'>) => {
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { id, ...data } : t))
+    )
+  }
+
   const addInventoryItem = (item: Omit<InventoryItem, 'id'>) => {
     const newItem = { ...item, id: crypto.randomUUID() }
     setInventory((prev) => [newItem, ...prev])
@@ -46,6 +53,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     transactions,
     addTransaction,
     deleteTransaction,
+    updateTransaction,
     inventory,
     addInventoryItem,
     isDataReady,

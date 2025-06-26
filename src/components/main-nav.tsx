@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LayoutDashboard, FileText, Package, ClipboardPlus } from 'lucide-react';
+import { LayoutDashboard, FileText, Package, ClipboardPlus, History } from 'lucide-react';
 
 const navLinks = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/transactions', label: 'All Transactions', icon: History },
   { href: '/pnl', label: 'P&L', icon: FileText },
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/entry', label: 'Data Entry', icon: ClipboardPlus },

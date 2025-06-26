@@ -26,17 +26,6 @@ import { useToast } from '@/hooks/use-toast'
 import { useDebounce } from '@/hooks/use-debounce'
 import { getAIAssistance } from '@/lib/actions'
 import { AiAssistant } from './ai-assistant'
-import { format, parseISO } from 'date-fns'
-import { Trash2 } from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { cn } from '@/lib/utils'
 
 const revenueSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive'),
@@ -61,7 +50,7 @@ const inventorySchema = z.object({
 })
 
 export function EntryForm() {
-  const { transactions, addTransaction, deleteTransaction, addInventoryItem } = useData()
+  const { addTransaction, addInventoryItem } = useData()
   const { toast } = useToast()
   const [aiErrors, setAiErrors] = useState<string[]>([])
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -83,9 +72,9 @@ export function EntryForm() {
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
-    revenueForm.reset({ ...revenueForm.getValues(), date: today });
-    expenseForm.reset({ ...expenseForm.getValues(), date: today });
-    inventoryForm.reset({ ...inventoryForm.getValues(), purchaseDate: today });
+    revenueForm.reset({ amount: 0, description: '', date: today });
+    expenseForm.reset({ amount: 0, description: '', category: '', date: today });
+    inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -272,71 +261,6 @@ export function EntryForm() {
                 <Button type="submit">Add to Inventory</Button>
               </form>
             </Form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
-            <CardDescription>
-              View and manage your recent revenue and expense entries.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[120px]">Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="w-[50px] text-right">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.length > 0 ? (
-                  transactions.slice(0, 10).map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>{format(parseISO(transaction.date), 'MMM d, yyyy')}</TableCell>
-                      <TableCell className="font-medium">{transaction.description}</TableCell>
-                      <TableCell className="capitalize text-muted-foreground">{transaction.type}</TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right font-semibold',
-                          transaction.type === 'revenue'
-                            ? 'text-primary'
-                            : 'text-destructive'
-                        )}
-                      >
-                        {transaction.type === 'revenue' ? '+' : '-'}$
-                        {transaction.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            deleteTransaction(transaction.id)
-                            toast({ title: 'Success', description: 'Transaction deleted successfully.' })
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete Transaction</span>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No recent transactions.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
           </CardContent>
         </Card>
 
