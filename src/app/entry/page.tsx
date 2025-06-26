@@ -1,7 +1,7 @@
 'use client'
 import { PageHeader } from '@/components/page-header'
 import { EntryForm } from '@/components/entry/entry-form'
-import { useData } from '@/lib/data-provider'
+import { useIsMounted } from '@/hooks/use-is-mounted'
 import { Skeleton } from '@/components/ui/skeleton'
 
 function EntryPageSkeleton() {
@@ -23,7 +23,7 @@ function EntryPageSkeleton() {
 }
 
 export default function EntryPage() {
-  const { isDataReady } = useData()
+  const isMounted = useIsMounted()
 
   return (
     <div className="flex flex-col gap-6">
@@ -31,7 +31,7 @@ export default function EntryPage() {
         title="Data Entry"
         description="Add your revenue, expenses, and inventory. The AI assistant will help identify any issues."
       />
-      {isDataReady ? <EntryForm /> : <EntryPageSkeleton />}
+      {isMounted ? <EntryForm /> : <EntryPageSkeleton />}
     </div>
   )
 }
