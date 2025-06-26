@@ -1,8 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { PageHeader } from '@/components/page-header'
-import { TransactionsTable } from '@/components/transactions/transactions-table'
 import { useData } from '@/lib/data-provider'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
@@ -14,12 +11,31 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useDebounce } from '@/hooks/use-debounce'
+import { PageHeader } from '@/components/page-header'
+import { TransactionsTable } from '@/components/transactions/transactions-table'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 
 export default function TransactionsPage() {
   const { transactions, isDataReady } = useData()
-  const [filterType, setFilterType] = useState('all')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const filterType = searchParams.get('type') || 'all'
+
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
+
+  const handleFilterChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value === 'all') {
+      params.delete('type')
+    } else {
+      params.set('type', value)
+    }
+    router.push(`${pathname}?${params.toString()}`)
+  }
 
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -46,7 +62,7 @@ export default function TransactionsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-sm"
             />
-            <Select value={filterType} onValueChange={setFilterType}>
+            <Select value={filterType} onValueChange={handleFilterChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
