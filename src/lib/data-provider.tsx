@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, type ReactNode, useCallback, useState, useEffect } from 'react'
-import type { Transaction, InventoryItem, MenuItem } from '@/types'
+import type { Transaction, InventoryItem, MenuItem, PayrollEntry } from '@/types'
 
 // A helper function to get data from local storage safely.
 function getInitialState<T>(key: string, defaultValue: T): T {
@@ -30,15 +30,18 @@ interface DataContextType {
   addMenuItem: (item: Omit<MenuItem, 'id'>) => void
   updateMenuItem: (id: string, data: Omit<MenuItem, 'id'>) => void
   deleteMenuItem: (id: string) => void
+  payroll: PayrollEntry[]
+  addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => void
   isDataReady: boolean
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => getInitialState('transactions', []));
-  const [inventory, setInventory] = useState<InventoryItem[]>(() => getInitialState('inventory', []));
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => getInitialState('menuItems', []));
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [payroll, setPayroll] = useState<PayrollEntry[]>([]);
   const [isDataReady, setIsDataReady] = useState(false);
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setTransactions(getInitialState('transactions', []));
         setInventory(getInitialState('inventory', []));
         setMenuItems(getInitialState('menuItems', []));
+        setPayroll(getInitialState('payroll', []));
       } finally {
         setIsDataReady(true);
       }
@@ -70,6 +74,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem('menuItems', JSON.stringify(menuItems));
     }
   }, [menuItems, isDataReady]);
+  
+  useEffect(() => {
+    if (isDataReady) {
+      window.localStorage.setItem('payroll', JSON.stringify(payroll));
+    }
+  }, [payroll, isDataReady]);
 
   const addTransaction = useCallback((transaction: Omit<Transaction, 'id'>) => {
     const newTransaction = { ...transaction, id: crypto.randomUUID() }
@@ -115,6 +125,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const deleteMenuItem = useCallback((id: string) => {
     setMenuItems(prev => prev.filter(item => item.id !== id));
   }, []);
+  
+  const addPayrollEntry = useCallback((entry: Omit<PayrollEntry, 'id' | 'netPay'>) => {
+    const netPay = entry.grossPay - entry.deductions;
+    const newEntry = { ...entry, netPay, id: crypto.randomUUID() };
+    setPayroll(prev => [newEntry, ...prev]);
+
+    addTransaction({
+        type: 'expense',
+        date: entry.payDate,
+        amount: entry.grossPay,
+        description: `Payroll for ${entry.employeeName}`,
+        category: 'Payroll',
+    });
+  }, [addTransaction]);
 
 
   const value = {
@@ -129,6 +153,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addMenuItem,
     updateMenuItem,
     deleteMenuItem,
+    payroll,
+    addPayrollEntry,
     isDataReady,
   }
 

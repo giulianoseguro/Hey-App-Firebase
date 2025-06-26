@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LayoutDashboard, FileText, Package, ClipboardPlus, History, BarChart3, BookOpenText } from 'lucide-react';
+import { LayoutDashboard, FileText, Package, ClipboardPlus, History, BarChart3, BookOpenText, Users } from 'lucide-react';
 
 const navLinks = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'All Transactions', icon: History },
   { href: '/pnl', label: 'P&L', icon: FileText },
   { href: '/profitability', label: 'Profitability', icon: BarChart3 },
+  { href: '/payroll', label: 'Payroll', icon: Users },
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/menu', label: 'Menu Items', icon: BookOpenText },
   { href: '/entry', label: 'Data Entry', icon: ClipboardPlus },

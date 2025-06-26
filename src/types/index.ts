@@ -25,3 +25,12 @@ export interface MenuItem {
   price: number;
   cost: number;
 }
+
+export interface PayrollEntry {
+  id: string;
+  employeeName: string;
+  payDate: string; // ISO string
+  grossPay: number;
+  deductions: number;
+  netPay: number;
+}
