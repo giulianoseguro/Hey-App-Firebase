@@ -55,6 +55,7 @@ const inventorySchema = z.object({
   name: z.string().min(1, 'Item name is required'),
   quantity: z.coerce.number().positive('Quantity must be positive'),
   unit: z.string().min(1, 'Unit is required'),
+  totalCost: z.coerce.number().positive('Total cost must be positive'),
   purchaseDate: z.string().min(1, 'Purchase date is required'),
   expiryDate: z.string().min(1, 'Expiry date is required'),
 })
@@ -77,7 +78,7 @@ export function EntryForm() {
   
   const inventoryForm = useForm<z.infer<typeof inventorySchema>>({
     resolver: zodResolver(inventorySchema),
-    defaultValues: { name: '', quantity: 0, unit: '', purchaseDate: '', expiryDate: '' },
+    defaultValues: { name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: '', expiryDate: '' },
   })
 
   useEffect(() => {
@@ -101,6 +102,8 @@ export function EntryForm() {
     let isCancelled = false;
 
     const fetchAIAssistance = async () => {
+      if (!debouncedFormState) return;
+
       const revenueData = JSON.parse(debouncedFormState.revenue);
       const expenseData = JSON.parse(debouncedFormState.expenses);
       const inventoryData = JSON.parse(debouncedFormState.inventory);
@@ -113,7 +116,8 @@ export function EntryForm() {
         expenseData.category !== '' ||
         inventoryData.name !== '' ||
         inventoryData.quantity > 0 ||
-        inventoryData.unit !== '';
+        inventoryData.unit !== '' ||
+        inventoryData.totalCost > 0;
 
       if (!hasInput) {
         setAiErrors([]);
@@ -139,9 +143,7 @@ export function EntryForm() {
       }
     };
 
-    if (debouncedFormState) {
-      fetchAIAssistance();
-    }
+    fetchAIAssistance();
 
     return () => {
       isCancelled = true;
@@ -163,8 +165,8 @@ export function EntryForm() {
   
   const onInventorySubmit = (values: z.infer<typeof inventorySchema>) => {
     addInventoryItem(values)
-    toast({ title: 'Success', description: 'Inventory item added successfully.' })
-    inventoryForm.reset({ name: '', quantity: 0, unit: '', purchaseDate: new Date().toISOString().split('T')[0], expiryDate: '' })
+    toast({ title: 'Success', description: 'Inventory item and expense added successfully.' })
+    inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: new Date().toISOString().split('T')[0], expiryDate: '' })
   }
 
   return (
@@ -238,16 +240,21 @@ export function EntryForm() {
         <Card>
           <CardHeader>
             <CardTitle>Add to Inventory</CardTitle>
-            <CardDescription>Add new items to your stock.</CardDescription>
+            <CardDescription>Add new items to your stock. This will also create an expense entry.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...inventoryForm}>
               <form onSubmit={inventoryForm.handleSubmit(onInventorySubmit)} className="space-y-4">
-                 <div className="grid gap-4 sm:grid-cols-3">
+                 <div className="grid gap-4 sm:grid-cols-2">
                     <FormField control={inventoryForm.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Item Name</FormLabel><FormControl><Input placeholder="e.g., Mozzarella" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                     <FormField control={inventoryForm.control} name="quantity" render={({ field }) => (
+                    <FormField control={inventoryForm.control} name="totalCost" render={({ field }) => (
+                        <FormItem><FormLabel>Total Cost ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                </div>
+                 <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField control={inventoryForm.control} name="quantity" render={({ field }) => (
                         <FormItem><FormLabel>Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={inventoryForm.control} name="unit" render={({ field }) => (

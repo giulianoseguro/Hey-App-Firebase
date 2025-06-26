@@ -14,4 +14,5 @@ export interface InventoryItem {
   unit: string;
   purchaseDate: string; // ISO string
   expiryDate: string; // ISO string
+  totalCost: number;
 }

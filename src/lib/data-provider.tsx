@@ -33,6 +33,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addInventoryItem = (item: Omit<InventoryItem, 'id'>) => {
     const newItem = { ...item, id: crypto.randomUUID() }
     setInventory((prev) => [newItem, ...prev])
+    addTransaction({
+      type: 'expense',
+      date: item.purchaseDate,
+      amount: item.totalCost,
+      description: `Purchase: ${item.quantity} ${item.unit} of ${item.name}`,
+      category: 'Inventory',
+    })
   }
 
   const value = {
