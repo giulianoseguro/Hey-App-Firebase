@@ -11,7 +11,6 @@ function EntryPageSkeleton() {
         <Skeleton className="h-[246px] w-full rounded-lg" />
         <Skeleton className="h-[286px] w-full rounded-lg" />
         <Skeleton className="h-[326px] w-full rounded-lg" />
-        <Skeleton className="h-[400px] w-full rounded-lg" />
       </div>
       <div className="lg:col-span-1">
         <div className="sticky top-24">

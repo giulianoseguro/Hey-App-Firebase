@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState, useEffect, useCallback } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useData } from '@/lib/data-provider'
@@ -26,11 +26,23 @@ import { useToast } from '@/hooks/use-toast'
 import { useDebounce } from '@/hooks/use-debounce'
 import { getAIAssistance } from '@/lib/actions'
 import { AiAssistant } from './ai-assistant'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+
+const BC_SALES_TAX_RATE = 0.12
 
 const revenueSchema = z.object({
-  amount: z.coerce.number().positive('Amount must be positive'),
-  description: z.string().min(1, 'Description is required'),
+  menuItemId: z.string().min(1, 'Please select an item.'),
+  quantity: z.coerce.number().positive('Quantity must be positive.'),
   date: z.string().min(1, 'Date is required'),
+  includesTax: z.boolean(),
 })
 
 const expenseSchema = z.object({
@@ -50,14 +62,19 @@ const inventorySchema = z.object({
 })
 
 export function EntryForm() {
-  const { addTransaction, addInventoryItem } = useData()
+  const { addTransactions, addInventoryItem, menuItems, isDataReady } = useData()
   const { toast } = useToast()
   const [aiErrors, setAiErrors] = useState<string[]>([])
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [today, setToday] = useState('')
+
+  useEffect(() => {
+    setToday(new Date().toISOString().split('T')[0])
+  }, [])
   
   const revenueForm = useForm<z.infer<typeof revenueSchema>>({
     resolver: zodResolver(revenueSchema),
-    defaultValues: { amount: 0, description: '', date: '' },
+    defaultValues: { menuItemId: '', quantity: 1, date: '', includesTax: true },
   })
 
   const expenseForm = useForm<z.infer<typeof expenseSchema>>({
@@ -69,93 +86,128 @@ export function EntryForm() {
     resolver: zodResolver(inventorySchema),
     defaultValues: { name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: '', expiryDate: '' },
   })
-
+  
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    revenueForm.reset({ amount: 0, description: '', date: today });
-    expenseForm.reset({ amount: 0, description: '', category: '', date: today });
-    inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' });
+    if (today) {
+        revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true });
+        expenseForm.reset({ amount: 0, description: '', category: '', date: today });
+        inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [today]);
 
+  const watchedRevenueForm = revenueForm.watch()
+  const selectedMenuItem = menuItems.find(item => item.id === watchedRevenueForm.menuItemId)
+  const totalSaleAmount = selectedMenuItem ? selectedMenuItem.price * watchedRevenueForm.quantity : 0;
 
   const formStateForAI = {
-    revenue: JSON.stringify(revenueForm.watch()),
+    revenue: JSON.stringify(watchedRevenueForm),
     expenses: JSON.stringify(expenseForm.watch()),
     inventory: JSON.stringify(inventoryForm.watch()),
   }
 
   const debouncedFormState = useDebounce(formStateForAI, 1000)
 
+  const fetchAIAssistance = useCallback(async (state: typeof debouncedFormState) => {
+    setIsAiLoading(true);
+    try {
+      const errors = await getAIAssistance(state);
+      setAiErrors(errors);
+    } catch (error) {
+      console.error('AI assistance fetch failed:', error);
+      setAiErrors(['Failed to get AI assistance.']);
+    } finally {
+      setIsAiLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    let isCancelled = false;
-
-    const fetchAIAssistance = async () => {
-      if (!debouncedFormState) return;
-
+    if (debouncedFormState) {
       const revenueData = JSON.parse(debouncedFormState.revenue);
-      const expenseData = JSON.parse(debouncedFormState.expenses);
-      const inventoryData = JSON.parse(debouncedFormState.inventory);
-
-      const hasInput =
-        revenueData.amount > 0 ||
-        revenueData.description !== '' ||
-        expenseData.amount > 0 ||
-        expenseData.description !== '' ||
-        expenseData.category !== '' ||
-        inventoryData.name !== '' ||
-        inventoryData.quantity > 0 ||
-        inventoryData.unit !== '' ||
-        inventoryData.totalCost > 0;
-
-      if (!hasInput) {
+      const hasInput = revenueData.menuItemId !== '' && revenueData.quantity > 0;
+      if (hasInput) {
+        fetchAIAssistance(debouncedFormState);
+      } else {
         setAiErrors([]);
-        setIsAiLoading(false);
-        return;
       }
-
-      setIsAiLoading(true);
-      try {
-        const errors = await getAIAssistance(debouncedFormState);
-        if (!isCancelled) {
-          setAiErrors(errors);
-        }
-      } catch (error) {
-        console.error('AI assistance fetch failed:', error);
-        if(!isCancelled) {
-          setAiErrors(['Failed to get AI assistance.']);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsAiLoading(false);
-        }
-      }
-    };
-
-    fetchAIAssistance();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [debouncedFormState]);
-
+    }
+  }, [debouncedFormState, fetchAIAssistance]);
 
   const onRevenueSubmit = (values: z.infer<typeof revenueSchema>) => {
-    addTransaction({ type: 'revenue', category: 'Sales', ...values })
-    toast({ title: 'Success', description: 'Revenue added successfully.' })
-    revenueForm.reset({ amount: 0, description: '', date: new Date().toISOString().split('T')[0] })
+    if (!selectedMenuItem) {
+      toast({ title: 'Error', description: 'Could not find selected menu item.', variant: 'destructive' })
+      return;
+    }
+
+    let revenueAmount = selectedMenuItem.price * values.quantity;
+    const transactionsToAdd = [];
+    
+    if (values.includesTax) {
+      const preTaxRevenue = revenueAmount / (1 + BC_SALES_TAX_RATE);
+      const taxAmount = revenueAmount - preTaxRevenue;
+      revenueAmount = preTaxRevenue;
+      
+      transactionsToAdd.push({
+        type: 'expense',
+        date: values.date,
+        amount: taxAmount,
+        description: `Sales Tax for ${values.quantity} x ${selectedMenuItem.name}`,
+        category: 'Taxes',
+      });
+    }
+
+    const cogsAmount = selectedMenuItem.cost * values.quantity;
+    transactionsToAdd.push({
+      type: 'expense',
+      date: values.date,
+      amount: cogsAmount,
+      description: `COGS for ${values.quantity} x ${selectedMenuItem.name}`,
+      category: 'Cost of Goods Sold',
+    });
+
+    transactionsToAdd.push({
+      type: 'revenue',
+      date: values.date,
+      amount: revenueAmount,
+      description: `Sale: ${values.quantity} x ${selectedMenuItem.name}`,
+      category: 'Sales',
+      menuItemId: values.menuItemId,
+      quantity: values.quantity
+    });
+
+    addTransactions(transactionsToAdd);
+
+    toast({ title: 'Success', description: `Sale of ${selectedMenuItem.name} recorded.` });
+    revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true });
   }
 
   const onExpenseSubmit = (values: z.infer<typeof expenseSchema>) => {
-    addTransaction({ type: 'expense', ...values })
+    addTransactions([{ type: 'expense', ...values }])
     toast({ title: 'Success', description: 'Expense added successfully.' })
-    expenseForm.reset({ amount: 0, description: '', category: '', date: new Date().toISOString().split('T')[0] })
+    expenseForm.reset({ amount: 0, description: '', category: '', date: today })
   }
   
   const onInventorySubmit = (values: z.infer<typeof inventorySchema>) => {
     addInventoryItem(values)
     toast({ title: 'Success', description: 'Inventory item and expense added successfully.' })
-    inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: new Date().toISOString().split('T')[0], expiryDate: '' })
+    inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' })
+  }
+
+  if (!isDataReady) {
+    return (
+        <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+                <Skeleton className="h-[300px] w-full" />
+                <Skeleton className="h-[300px] w-full" />
+                <Skeleton className="h-[300px] w-full" />
+            </div>
+            <div className="lg:col-span-1">
+                <div className="sticky top-24">
+                <Skeleton className="h-[188px] w-full" />
+                </div>
+            </div>
+        </div>
+    )
   }
 
   return (
@@ -164,19 +216,35 @@ export function EntryForm() {
         <Card>
           <CardHeader>
             <CardTitle>Add Revenue</CardTitle>
-            <CardDescription>Record money coming into your business.</CardDescription>
+            <CardDescription>Record a sale from your menu.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...revenueForm}>
               <form onSubmit={revenueForm.handleSubmit(onRevenueSubmit)} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField control={revenueForm.control} name="amount" render={({ field }) => (
+                  <FormField control={revenueForm.control} name="menuItemId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount ($)</FormLabel>
-                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                      <FormLabel>Menu Item</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {menuItems.map(item => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <FormField control={revenueForm.control} name="quantity" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantity</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
                    <FormField control={revenueForm.control} name="date" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Date</FormLabel>
@@ -184,15 +252,27 @@ export function EntryForm() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                  <div className="space-y-2">
+                    <Label>Total Sale</Label>
+                    <Input readOnly value={`$${totalSaleAmount.toFixed(2)}`} className="font-semibold" />
+                  </div>
                 </div>
-                 <FormField control={revenueForm.control} name="description" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl><Input placeholder="e.g., Daily sales" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                <Button type="submit">Add Revenue</Button>
+                <div className="flex items-center space-x-2">
+                    <FormField control={revenueForm.control} name="includesTax" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm col-span-2 bg-background">
+                        <div className="space-y-0.5">
+                            <FormLabel>Price includes 12% Sales Tax (BC)?</FormLabel>
+                        </div>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )} />
+                </div>
+                <Button type="submit">Add Sale</Button>
               </form>
             </Form>
           </CardContent>
@@ -211,14 +291,14 @@ export function EntryForm() {
                         <FormItem><FormLabel>Amount ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={expenseForm.control} name="category" render={({ field }) => (
-                        <FormItem><FormLabel>Category</FormLabel><FormControl><Input placeholder="e.g., Ingredients" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Category</FormLabel><FormControl><Input placeholder="e.g., Rent, Utilities" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={expenseForm.control} name="date" render={({ field }) => (
                         <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
                 <FormField control={expenseForm.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Flour, cheese, tomatoes" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Monthly rent payment" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <Button type="submit">Add Expense</Button>
               </form>
@@ -263,7 +343,6 @@ export function EntryForm() {
             </Form>
           </CardContent>
         </Card>
-
       </div>
       <div className="lg:col-span-1">
         <div className="sticky top-24">

@@ -5,6 +5,8 @@ export interface Transaction {
   amount: number;
   description: string;
   category: string;
+  menuItemId?: string; // Link to menu item for sales
+  quantity?: number; // Quantity of menu items sold
 }
 
 export interface InventoryItem {
@@ -15,4 +17,11 @@ export interface InventoryItem {
   purchaseDate: string; // ISO string
   expiryDate: string; // ISO string
   totalCost: number;
+}
+
+export interface MenuItem {
+  id:string;
+  name: string;
+  price: number;
+  cost: number;
 }
