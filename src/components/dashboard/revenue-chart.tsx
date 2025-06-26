@@ -40,11 +40,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
 
   const chartConfig = {
     revenue: {
-      label: 'Revenue',
+      label: 'Receita',
       color: 'hsl(var(--chart-1))',
     },
     expenses: {
-      label: 'Expenses',
+      label: 'Despesas',
       color: 'hsl(var(--chart-2))',
     },
   }
@@ -52,9 +52,9 @@ export function RevenueChart({ data }: RevenueChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Revenue vs. Expenses</CardTitle>
+        <CardTitle>Receitas vs. Despesas</CardTitle>
         <CardDescription>
-          A monthly overview of your income and spending.
+          Uma visão geral mensal de suas receitas e despesas.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -78,7 +78,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
         </ChartContainer>
          ) : (
           <div className="flex h-[300px] w-full items-center justify-center text-muted-foreground">
-            No revenue or expense data available.
+            Nenhum dado de receita ou despesa disponível.
           </div>
         )}
       </CardContent>

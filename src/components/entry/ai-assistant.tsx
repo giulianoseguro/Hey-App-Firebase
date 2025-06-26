@@ -13,13 +13,13 @@ export function AiAssistant({ errors, isLoading }: AiAssistantProps) {
     <Card className="bg-accent/50 border-accent">
       <CardHeader className="flex-row items-center gap-2 space-y-0">
         <Lightbulb className="h-5 w-5 text-accent-foreground" />
-        <CardTitle className="text-accent-foreground">AI Assistant</CardTitle>
+        <CardTitle className="text-accent-foreground">Assistente de IA</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <LoaderCircle className="h-4 w-4 animate-spin" />
-            <span>Thinking...</span>
+            <span>Pensando...</span>
           </div>
         ) : errors.length > 0 ? (
           <ul className="space-y-2 text-sm text-accent-foreground/90">
@@ -32,7 +32,7 @@ export function AiAssistant({ errors, isLoading }: AiAssistantProps) {
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Everything looks good so far! I'll let you know if I spot any potential issues.
+            Tudo parece bem por enquanto! Avisarei se encontrar algum problema em potencial.
           </p>
         )}
       </CardContent>

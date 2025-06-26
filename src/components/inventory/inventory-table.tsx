@@ -26,9 +26,9 @@ export function InventoryTable({ data }: InventoryTableProps) {
     const daysToExpiry = differenceInDays(parseISO(item.expiryDate), new Date())
     const isLowStock = item.quantity < LOW_STOCK_THRESHOLD
 
-    if (daysToExpiry < 0) return { text: 'Expired', variant: 'destructive' } as const
-    if (daysToExpiry <= EXPIRY_SOON_THRESHOLD_DAYS) return { text: `Expires in ${daysToExpiry}d`, variant: 'destructive' } as const
-    if (isLowStock) return { text: 'Low Stock', variant: 'secondary' } as const
+    if (daysToExpiry < 0) return { text: 'Vencido', variant: 'destructive' } as const
+    if (daysToExpiry <= EXPIRY_SOON_THRESHOLD_DAYS) return { text: `Vence em ${daysToExpiry}d`, variant: 'destructive' } as const
+    if (isLowStock) return { text: 'Estoque Baixo', variant: 'secondary' } as const
     
     return null
   }
@@ -41,10 +41,10 @@ export function InventoryTable({ data }: InventoryTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Item</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead>Purchase Date</TableHead>
-            <TableHead>Expiry Date</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Quantidade</TableHead>
+            <TableHead>Data da Compra</TableHead>
+            <TableHead>Data de Validade</TableHead>
+            <TableHead>Situação</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -67,7 +67,7 @@ export function InventoryTable({ data }: InventoryTableProps) {
           ) : (
             <TableRow>
               <TableCell colSpan={5} className="h-24 text-center">
-                No inventory items found.
+                Nenhum item no estoque.
               </TableCell>
             </TableRow>
           )}
