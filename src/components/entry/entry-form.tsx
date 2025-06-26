@@ -67,18 +67,27 @@ export function EntryForm() {
   
   const revenueForm = useForm<z.infer<typeof revenueSchema>>({
     resolver: zodResolver(revenueSchema),
-    defaultValues: { amount: 0, description: '', date: new Date().toISOString().split('T')[0] },
+    defaultValues: { amount: 0, description: '', date: '' },
   })
 
   const expenseForm = useForm<z.infer<typeof expenseSchema>>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: { amount: 0, description: '', category: '', date: new Date().toISOString().split('T')[0] },
+    defaultValues: { amount: 0, description: '', category: '', date: '' },
   })
   
   const inventoryForm = useForm<z.infer<typeof inventorySchema>>({
     resolver: zodResolver(inventorySchema),
-    defaultValues: { name: '', quantity: 0, unit: '', purchaseDate: new Date().toISOString().split('T')[0], expiryDate: '' },
+    defaultValues: { name: '', quantity: 0, unit: '', purchaseDate: '', expiryDate: '' },
   })
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    revenueForm.reset({ ...revenueForm.getValues(), date: today });
+    expenseForm.reset({ ...expenseForm.getValues(), date: today });
+    inventoryForm.reset({ ...inventoryForm.getValues(), purchaseDate: today });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const formStateForAI = {
     revenue: JSON.stringify(revenueForm.watch()),
@@ -101,19 +110,19 @@ export function EntryForm() {
   const onRevenueSubmit = (values: z.infer<typeof revenueSchema>) => {
     addTransaction({ type: 'revenue', category: 'Sales', ...values })
     toast({ title: 'Success', description: 'Revenue added successfully.' })
-    revenueForm.reset()
+    revenueForm.reset({ amount: 0, description: '', date: new Date().toISOString().split('T')[0] })
   }
 
   const onExpenseSubmit = (values: z.infer<typeof expenseSchema>) => {
     addTransaction({ type: 'expense', ...values })
     toast({ title: 'Success', description: 'Expense added successfully.' })
-    expenseForm.reset()
+    expenseForm.reset({ amount: 0, description: '', category: '', date: new Date().toISOString().split('T')[0] })
   }
   
   const onInventorySubmit = (values: z.infer<typeof inventorySchema>) => {
     addInventoryItem(values)
     toast({ title: 'Success', description: 'Inventory item added successfully.' })
-    inventoryForm.reset()
+    inventoryForm.reset({ name: '', quantity: 0, unit: '', purchaseDate: new Date().toISOString().split('T')[0], expiryDate: '' })
   }
 
   return (
