@@ -1,14 +1,14 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import { Button, type ButtonProps } from '@/components/ui/button'
 import type { Transaction } from '@/types'
 import { Download } from 'lucide-react'
 
-interface ExportButtonProps {
+interface ExportButtonProps extends ButtonProps {
   data: Transaction[]
 }
 
-export function ExportButton({ data }: ExportButtonProps) {
+export function ExportButton({ data, ...props }: ExportButtonProps) {
   const exportToCsv = () => {
     const headers = 'ID,Type,Date,Description,Category,Amount\n'
     const csvContent = data
@@ -29,7 +29,7 @@ export function ExportButton({ data }: ExportButtonProps) {
   }
 
   return (
-    <Button onClick={exportToCsv} disabled={data.length === 0}>
+    <Button onClick={exportToCsv} {...props}>
       <Download className="mr-2 h-4 w-4" />
       Export CSV
     </Button>

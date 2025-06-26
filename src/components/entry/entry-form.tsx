@@ -27,7 +27,7 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { getAIAssistance } from '@/lib/actions'
 import { AiAssistant } from './ai-assistant'
 import { format, parseISO } from 'date-fns'
-import { Trash2 } from 'lucide-react'
+import { LoaderCircle, Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -60,7 +60,7 @@ const inventorySchema = z.object({
 })
 
 export function EntryForm() {
-  const { transactions, addTransaction, deleteTransaction, addInventoryItem } = useData()
+  const { transactions, addTransaction, deleteTransaction, addInventoryItem, isDataReady } = useData()
   const { toast } = useToast()
   const [aiErrors, setAiErrors] = useState<string[]>([])
   const [isAiLoading, startAiTransition] = useTransition()
@@ -234,60 +234,66 @@ export function EntryForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[120px]">Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="w-[50px] text-right">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.length > 0 ? (
-                  transactions.slice(0, 10).map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>{format(parseISO(transaction.date), 'MMM d, yyyy')}</TableCell>
-                      <TableCell className="font-medium">{transaction.description}</TableCell>
-                      <TableCell className="capitalize text-muted-foreground">{transaction.type}</TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right font-semibold',
-                          transaction.type === 'revenue'
-                            ? 'text-primary'
-                            : 'text-destructive'
-                        )}
-                      >
-                        {transaction.type === 'revenue' ? '+' : '-'}$
-                        {transaction.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            deleteTransaction(transaction.id)
-                            toast({ title: 'Success', description: 'Transaction deleted successfully.' })
-                          }}
+            {!isDataReady ? (
+              <div className="flex h-24 items-center justify-center">
+                <LoaderCircle className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-[50px] text-right">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.length > 0 ? (
+                    transactions.slice(0, 10).map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>{format(parseISO(transaction.date), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="font-medium">{transaction.description}</TableCell>
+                        <TableCell className="capitalize text-muted-foreground">{transaction.type}</TableCell>
+                        <TableCell
+                          className={cn(
+                            'text-right font-semibold',
+                            transaction.type === 'revenue'
+                              ? 'text-primary'
+                              : 'text-destructive'
+                          )}
                         >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete Transaction</span>
-                        </Button>
+                          {transaction.type === 'revenue' ? '+' : '-'}$
+                          {transaction.amount.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              deleteTransaction(transaction.id)
+                              toast({ title: 'Success', description: 'Transaction deleted successfully.' })
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete Transaction</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        No recent transactions.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                      No recent transactions.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
