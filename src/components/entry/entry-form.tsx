@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -63,7 +63,7 @@ export function EntryForm() {
   const { transactions, addTransaction, deleteTransaction, addInventoryItem } = useData()
   const { toast } = useToast()
   const [aiErrors, setAiErrors] = useState<string[]>([])
-  const [isAiLoading, startAiTransition] = useTransition()
+  const [isAiLoading, setIsAiLoading] = useState(false)
   
   const revenueForm = useForm<z.infer<typeof revenueSchema>>({
     resolver: zodResolver(revenueSchema),
@@ -98,13 +98,55 @@ export function EntryForm() {
   const debouncedFormState = useDebounce(formStateForAI, 1000)
 
   useEffect(() => {
-    if(debouncedFormState.revenue || debouncedFormState.expenses || debouncedFormState.inventory) {
-      startAiTransition(async () => {
-        const errors = await getAIAssistance(debouncedFormState)
-        setAiErrors(errors)
-      })
+    let isCancelled = false;
+
+    const fetchAIAssistance = async () => {
+      const revenueData = JSON.parse(debouncedFormState.revenue);
+      const expenseData = JSON.parse(debouncedFormState.expenses);
+      const inventoryData = JSON.parse(debouncedFormState.inventory);
+
+      const hasInput =
+        revenueData.amount > 0 ||
+        revenueData.description !== '' ||
+        expenseData.amount > 0 ||
+        expenseData.description !== '' ||
+        expenseData.category !== '' ||
+        inventoryData.name !== '' ||
+        inventoryData.quantity > 0 ||
+        inventoryData.unit !== '';
+
+      if (!hasInput) {
+        setAiErrors([]);
+        setIsAiLoading(false);
+        return;
+      }
+
+      setIsAiLoading(true);
+      try {
+        const errors = await getAIAssistance(debouncedFormState);
+        if (!isCancelled) {
+          setAiErrors(errors);
+        }
+      } catch (error) {
+        console.error('AI assistance fetch failed:', error);
+        if(!isCancelled) {
+          setAiErrors(['Failed to get AI assistance.']);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsAiLoading(false);
+        }
+      }
+    };
+
+    if (debouncedFormState) {
+      fetchAIAssistance();
     }
-  }, [debouncedFormState])
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [debouncedFormState]);
 
 
   const onRevenueSubmit = (values: z.infer<typeof revenueSchema>) => {
