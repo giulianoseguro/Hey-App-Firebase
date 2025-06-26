@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -34,6 +35,7 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  isMounted: boolean
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -69,6 +71,11 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
+    const [isMounted, setIsMounted] = React.useState(false)
+
+    React.useEffect(() => {
+      setIsMounted(true)
+    }, [])
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -125,8 +132,9 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        isMounted,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isMounted]
     )
 
     return (
@@ -175,7 +183,15 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, openMobile, setOpenMobile, isMounted } = useSidebar()
+
+    if (!isMounted) {
+      return (
+        <div className="group peer hidden md:block text-sidebar-foreground">
+           <div className="duration-200 relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] ease-linear" />
+        </div>
+      )
+    }
 
     if (collapsible === "none") {
       return (
