@@ -10,8 +10,8 @@ export default function PnlPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Lucros e Perdas"
-        description="Revise suas receitas e despesas."
+        title="Profit & Loss"
+        description="Review your income and expenses."
       >
         <ExportButton data={transactions} />
       </PageHeader>

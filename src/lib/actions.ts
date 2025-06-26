@@ -9,6 +9,6 @@ export async function getAIAssistance(input: AiErrorWatchInput): Promise<string[
   } catch (error) {
     console.error('AI Error Watch failed:', error)
     // Return a user-friendly error message, but avoid exposing internal details.
-    return ['Ocorreu um erro ao obter assistência da IA. Por favor, tente novamente.']
+    return ['An error occurred while getting AI assistance. Please try again.']
   }
 }

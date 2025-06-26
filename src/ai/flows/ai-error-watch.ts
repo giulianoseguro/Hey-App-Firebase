@@ -4,25 +4,25 @@
  * @fileOverview This file defines a Genkit flow for an AI assistant that watches user entries in real-time
  *  and identifies potential errors or inconsistencies in financial data.
  *
- * - aiErrorWatch - Uma função que processa a entrada do usuário e retorna possíveis erros ou inconsistências.
- * - AiErrorWatchInput - O tipo de entrada para a função aiErrorWatch.
- * - AiErrorWatchOutput - O tipo de retorno para a função aiErrorWatch.
+ * - aiErrorWatch - A function that processes user input and returns potential errors or inconsistencies.
+ * - AiErrorWatchInput - The input type for the aiErrorWatch function.
+ * - AiErrorWatchOutput - The return type for the aiErrorWatch function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AiErrorWatchInputSchema = z.object({
-  revenue: z.string().describe('A receita inserida pelo usuário.'),
-  expenses: z.string().describe('As despesas inseridas pelo usuário.'),
-  inventory: z.string().describe('Os dados de estoque inseridos pelo usuário.'),
+  revenue: z.string().describe('The revenue entered by the user.'),
+  expenses: z.string().describe('The expenses entered by the user.'),
+  inventory: z.string().describe('The inventory data entered by the user.'),
 });
 export type AiErrorWatchInput = z.infer<typeof AiErrorWatchInputSchema>;
 
 const AiErrorWatchOutputSchema = z.object({
   errors: z.array(
-    z.string().describe('Uma lista de possíveis erros ou inconsistências identificados pela IA.')
-  ).describe('Lista de erros identificados'),
+    z.string().describe('A list of potential errors or inconsistencies identified by the AI.')
+  ).describe('List of identified errors'),
 });
 export type AiErrorWatchOutput = z.infer<typeof AiErrorWatchOutputSchema>;
 
@@ -34,16 +34,16 @@ const prompt = ai.definePrompt({
   name: 'aiErrorWatchPrompt',
   input: {schema: AiErrorWatchInputSchema},
   output: {schema: AiErrorWatchOutputSchema},
-  prompt: `Você é um assistente de IA que ajuda os usuários a identificar possíveis erros ou inconsistências em seus lançamentos de dados financeiros.
+  prompt: `You are an AI assistant that helps users identify potential errors or inconsistencies in their financial data entries.
 
-  Revise os seguintes lançamentos de dados e identifique quaisquer erros, inconsistências ou informações ausentes.
-  Forneça uma lista de erros ou perguntas para ajudar o usuário a corrigir seus lançamentos. Seja específico e claro em seu feedback.
+  Review the following data entries and identify any errors, inconsistencies, or missing information.
+  Provide a list of errors or questions to help the user correct their entries. Be specific and clear in your feedback.
 
-  Receita: {{{revenue}}}
-  Despesas: {{{expenses}}}
-  Estoque: {{{inventory}}}
+  Revenue: {{{revenue}}}
+  Expenses: {{{expenses}}}
+  Inventory: {{{inventory}}}
 
-  A saída deve ser um array JSON de strings representando os erros encontrados. Se nenhum erro for encontrado, retorne um array vazio.
+  The output should be a JSON array of strings representing the errors found. If no errors are found, return an empty array.
   `,
 });
 

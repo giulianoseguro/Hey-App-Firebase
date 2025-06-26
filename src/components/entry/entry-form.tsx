@@ -28,24 +28,24 @@ import { getAIAssistance } from '@/lib/actions'
 import { AiAssistant } from './ai-assistant'
 
 const revenueSchema = z.object({
-  amount: z.coerce.number().positive('O valor deve ser positivo'),
-  description: z.string().min(1, 'A descrição é obrigatória'),
-  date: z.string().min(1, 'A data é obrigatória'),
+  amount: z.coerce.number().positive('Amount must be positive'),
+  description: z.string().min(1, 'Description is required'),
+  date: z.string().min(1, 'Date is required'),
 })
 
 const expenseSchema = z.object({
-  amount: z.coerce.number().positive('O valor deve ser positivo'),
-  description: z.string().min(1, 'A descrição é obrigatória'),
-  category: z.string().min(1, 'A categoria é obrigatória'),
-  date: z.string().min(1, 'A data é obrigatória'),
+  amount: z.coerce.number().positive('Amount must be positive'),
+  description: z.string().min(1, 'Description is required'),
+  category: z.string().min(1, 'Category is required'),
+  date: z.string().min(1, 'Date is required'),
 })
 
 const inventorySchema = z.object({
-  name: z.string().min(1, 'O nome do item é obrigatório'),
-  quantity: z.coerce.number().positive('A quantidade deve ser positiva'),
-  unit: z.string().min(1, 'A unidade é obrigatória'),
-  purchaseDate: z.string().min(1, 'A data de compra é obrigatória'),
-  expiryDate: z.string().min(1, 'A data de validade é obrigatória'),
+  name: z.string().min(1, 'Item name is required'),
+  quantity: z.coerce.number().positive('Quantity must be positive'),
+  unit: z.string().min(1, 'Unit is required'),
+  purchaseDate: z.string().min(1, 'Purchase date is required'),
+  expiryDate: z.string().min(1, 'Expiry date is required'),
 })
 
 export function EntryForm() {
@@ -89,19 +89,19 @@ export function EntryForm() {
 
   const onRevenueSubmit = (values: z.infer<typeof revenueSchema>) => {
     addTransaction({ type: 'revenue', category: 'Sales', ...values })
-    toast({ title: 'Sucesso', description: 'Receita adicionada com sucesso.' })
+    toast({ title: 'Success', description: 'Revenue added successfully.' })
     revenueForm.reset()
   }
 
   const onExpenseSubmit = (values: z.infer<typeof expenseSchema>) => {
     addTransaction({ type: 'expense', ...values })
-    toast({ title: 'Sucesso', description: 'Despesa adicionada com sucesso.' })
+    toast({ title: 'Success', description: 'Expense added successfully.' })
     expenseForm.reset()
   }
   
   const onInventorySubmit = (values: z.infer<typeof inventorySchema>) => {
     addInventoryItem(values)
-    toast({ title: 'Sucesso', description: 'Item de estoque adicionado com sucesso.' })
+    toast({ title: 'Success', description: 'Inventory item added successfully.' })
     inventoryForm.reset()
   }
 
@@ -110,8 +110,8 @@ export function EntryForm() {
       <div className="lg:col-span-2 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Adicionar Receita</CardTitle>
-            <CardDescription>Registre o dinheiro que entra no seu negócio.</CardDescription>
+            <CardTitle>Add Revenue</CardTitle>
+            <CardDescription>Record money coming into your business.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...revenueForm}>
@@ -119,14 +119,14 @@ export function EntryForm() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FormField control={revenueForm.control} name="amount" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Valor (R$)</FormLabel>
+                      <FormLabel>Amount ($)</FormLabel>
                       <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                    <FormField control={revenueForm.control} name="date" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data</FormLabel>
+                      <FormLabel>Date</FormLabel>
                       <FormControl><Input type="date" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
@@ -134,12 +134,12 @@ export function EntryForm() {
                 </div>
                  <FormField control={revenueForm.control} name="description" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descrição</FormLabel>
-                      <FormControl><Input placeholder="ex: Vendas do dia" {...field} /></FormControl>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl><Input placeholder="e.g., Daily sales" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                <Button type="submit">Adicionar Receita</Button>
+                <Button type="submit">Add Revenue</Button>
               </form>
             </Form>
           </CardContent>
@@ -147,27 +147,27 @@ export function EntryForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Adicionar Despesa</CardTitle>
-            <CardDescription>Registre o dinheiro gasto pelo seu negócio.</CardDescription>
+            <CardTitle>Add Expense</CardTitle>
+            <CardDescription>Record money spent by your business.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...expenseForm}>
               <form onSubmit={expenseForm.handleSubmit(onExpenseSubmit)} className="space-y-4">
                  <div className="grid gap-4 sm:grid-cols-3">
                     <FormField control={expenseForm.control} name="amount" render={({ field }) => (
-                        <FormItem><FormLabel>Valor (R$)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Amount ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={expenseForm.control} name="category" render={({ field }) => (
-                        <FormItem><FormLabel>Categoria</FormLabel><FormControl><Input placeholder="ex: Ingredientes" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Category</FormLabel><FormControl><Input placeholder="e.g., Ingredients" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={expenseForm.control} name="date" render={({ field }) => (
-                        <FormItem><FormLabel>Data</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
                 <FormField control={expenseForm.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Descrição</FormLabel><FormControl><Input placeholder="ex: Farinha, queijo, tomates" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Flour, cheese, tomatoes" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <Button type="submit">Adicionar Despesa</Button>
+                <Button type="submit">Add Expense</Button>
               </form>
             </Form>
           </CardContent>
@@ -175,32 +175,32 @@ export function EntryForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Adicionar ao Estoque</CardTitle>
-            <CardDescription>Adicione novos itens ao seu estoque.</CardDescription>
+            <CardTitle>Add to Inventory</CardTitle>
+            <CardDescription>Add new items to your stock.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...inventoryForm}>
               <form onSubmit={inventoryForm.handleSubmit(onInventorySubmit)} className="space-y-4">
                  <div className="grid gap-4 sm:grid-cols-3">
                     <FormField control={inventoryForm.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Nome do Item</FormLabel><FormControl><Input placeholder="ex: Muçarela" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Item Name</FormLabel><FormControl><Input placeholder="e.g., Mozzarella" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                      <FormField control={inventoryForm.control} name="quantity" render={({ field }) => (
-                        <FormItem><FormLabel>Quantidade</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={inventoryForm.control} name="unit" render={({ field }) => (
-                        <FormItem><FormLabel>Unidade</FormLabel><FormControl><Input placeholder="ex: kg, unidades" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Unit</FormLabel><FormControl><Input placeholder="e.g., kg, units" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
                  <div className="grid gap-4 sm:grid-cols-2">
                     <FormField control={inventoryForm.control} name="purchaseDate" render={({ field }) => (
-                        <FormItem><FormLabel>Data da Compra</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Purchase Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={inventoryForm.control} name="expiryDate" render={({ field }) => (
-                        <FormItem><FormLabel>Data de Validade</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Expiry Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
-                <Button type="submit">Adicionar ao Estoque</Button>
+                <Button type="submit">Add to Inventory</Button>
               </form>
             </Form>
           </CardContent>

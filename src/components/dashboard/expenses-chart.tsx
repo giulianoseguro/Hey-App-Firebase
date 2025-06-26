@@ -59,9 +59,9 @@ export function ExpensesChart({ data }: ExpensesChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Detalhamento de Despesas</CardTitle>
+        <CardTitle>Expenses Breakdown</CardTitle>
         <CardDescription>
-          Uma análise de para onde seu dinheiro está indo.
+          A breakdown of where your money is going.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -115,7 +115,7 @@ export function ExpensesChart({ data }: ExpensesChartProps) {
           </ChartContainer>
         ) : (
           <div className="flex h-[300px] w-full items-center justify-center text-muted-foreground">
-            Nenhum dado de despesa disponível.
+            No expense data available.
           </div>
         )}
       </CardContent>

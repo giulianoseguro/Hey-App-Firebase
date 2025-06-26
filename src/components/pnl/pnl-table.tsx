@@ -29,10 +29,10 @@ export function PnlTable({ data }: PnlTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Data</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Categoria</TableHead>
-            <TableHead className="text-right">Valor</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -50,7 +50,7 @@ export function PnlTable({ data }: PnlTableProps) {
                       : 'text-destructive'
                   )}
                 >
-                  {transaction.type === 'revenue' ? '+' : '-'}R$
+                  {transaction.type === 'revenue' ? '+' : '-'}$
                   {transaction.amount.toFixed(2)}
                 </TableCell>
               </TableRow>
@@ -58,23 +58,23 @@ export function PnlTable({ data }: PnlTableProps) {
           ) : (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center">
-                Nenhuma transação encontrada.
+                No transactions found.
               </TableCell>
             </TableRow>
           )}
         </TableBody>
         <TableFooter>
             <TableRow>
-                <TableCell colSpan={3} className="text-right font-bold">Receita Total</TableCell>
-                <TableCell className="text-right font-bold text-primary">R$ {totalRevenue.toFixed(2)}</TableCell>
+                <TableCell colSpan={3} className="text-right font-bold">Total Revenue</TableCell>
+                <TableCell className="text-right font-bold text-primary">$ {totalRevenue.toFixed(2)}</TableCell>
             </TableRow>
             <TableRow>
-                <TableCell colSpan={3} className="text-right font-bold">Despesas Totais</TableCell>
-                <TableCell className="text-right font-bold text-destructive">R$ {totalExpenses.toFixed(2)}</TableCell>
+                <TableCell colSpan={3} className="text-right font-bold">Total Expenses</TableCell>
+                <TableCell className="text-right font-bold text-destructive">$ {totalExpenses.toFixed(2)}</TableCell>
             </TableRow>
             <TableRow>
-                <TableCell colSpan={3} className="text-right font-bold text-lg">Lucro Líquido</TableCell>
-                <TableCell className={cn("text-right font-bold text-lg", netProfit >= 0 ? 'text-foreground' : 'text-destructive')}>R$ {netProfit.toFixed(2)}</TableCell>
+                <TableCell colSpan={3} className="text-right font-bold text-lg">Net Profit</TableCell>
+                <TableCell className={cn("text-right font-bold text-lg", netProfit >= 0 ? 'text-foreground' : 'text-destructive')}>$ {netProfit.toFixed(2)}</TableCell>
             </TableRow>
         </TableFooter>
       </Table>

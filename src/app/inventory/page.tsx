@@ -9,8 +9,8 @@ export default function InventoryPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Estoque"
-        description="Acompanhe os níveis de seu estoque e as datas de validade."
+        title="Inventory"
+        description="Keep track of your stock levels and expiry dates."
       />
       <InventoryTable data={inventory} />
     </div>

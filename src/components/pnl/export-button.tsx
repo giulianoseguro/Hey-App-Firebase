@@ -10,7 +10,7 @@ interface ExportButtonProps {
 
 export function ExportButton({ data }: ExportButtonProps) {
   const exportToCsv = () => {
-    const headers = 'ID,Tipo,Data,Descrição,Categoria,Valor\n'
+    const headers = 'ID,Type,Date,Description,Category,Amount\n'
     const csvContent = data
       .map(
         (t) =>
@@ -22,7 +22,7 @@ export function ExportButton({ data }: ExportButtonProps) {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.setAttribute('href', url)
-    link.setAttribute('download', `lucros-perdas-export-${new Date().toISOString().split('T')[0]}.csv`)
+    link.setAttribute('download', `profit-loss-export-${new Date().toISOString().split('T')[0]}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -31,7 +31,7 @@ export function ExportButton({ data }: ExportButtonProps) {
   return (
     <Button onClick={exportToCsv} disabled={data.length === 0}>
       <Download className="mr-2 h-4 w-4" />
-      Exportar CSV
+      Export CSV
     </Button>
   )
 }
