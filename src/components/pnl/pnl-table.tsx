@@ -46,8 +46,8 @@ export function PnlTable({ data }: PnlTableProps) {
                   className={cn(
                     'text-right font-semibold',
                     transaction.type === 'revenue'
-                      ? 'text-green-600'
-                      : 'text-red-600'
+                      ? 'text-primary'
+                      : 'text-destructive'
                   )}
                 >
                   {transaction.type === 'revenue' ? '+' : '-'}$
@@ -66,15 +66,15 @@ export function PnlTable({ data }: PnlTableProps) {
         <TableFooter>
             <TableRow>
                 <TableCell colSpan={3} className="text-right font-bold">Total Revenue</TableCell>
-                <TableCell className="text-right font-bold text-green-600">${totalRevenue.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-bold text-primary">${totalRevenue.toFixed(2)}</TableCell>
             </TableRow>
             <TableRow>
                 <TableCell colSpan={3} className="text-right font-bold">Total Expenses</TableCell>
-                <TableCell className="text-right font-bold text-red-600">${totalExpenses.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-bold text-destructive">${totalExpenses.toFixed(2)}</TableCell>
             </TableRow>
             <TableRow>
                 <TableCell colSpan={3} className="text-right font-bold text-lg">Net Profit</TableCell>
-                <TableCell className={cn("text-right font-bold text-lg", netProfit >= 0 ? 'text-foreground' : 'text-red-600')}>${netProfit.toFixed(2)}</TableCell>
+                <TableCell className={cn("text-right font-bold text-lg", netProfit >= 0 ? 'text-foreground' : 'text-destructive')}>${netProfit.toFixed(2)}</TableCell>
             </TableRow>
         </TableFooter>
       </Table>

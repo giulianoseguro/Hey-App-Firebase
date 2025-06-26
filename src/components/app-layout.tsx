@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sidebar';
 import { MainNav } from '@/components/main-nav';
 import { Button } from './ui/button';
-import { PlusCircle, Pizza } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -21,10 +21,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <Sidebar>
           <SidebarHeader>
-             <div className="flex items-center gap-2">
-                <Pizza className="size-8 text-primary" />
-                <h1 className="text-xl font-bold text-sidebar-foreground">Pizza Profit Pilot</h1>
-             </div>
+             <Link href="/" className="flex flex-col items-center justify-center py-4 text-center">
+                <span className="text-4xl font-extrabold tracking-tighter text-primary">HEY!</span>
+                <span className="text-xs font-semibold tracking-wider uppercase text-sidebar-foreground">Brazilian Pizza</span>
+             </Link>
           </SidebarHeader>
           <SidebarContent>
             <MainNav />
@@ -41,10 +41,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarInset>
             <header className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:hidden">
               <SidebarTrigger />
-              <div className="flex items-center gap-2">
-                  <Pizza className="size-7 text-primary" />
-                  <h1 className="text-lg font-bold">Pizza Profit Pilot</h1>
-              </div>
+              <Link href="/" className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-extrabold tracking-tighter text-primary">HEY!</span>
+                <span className="text-xs font-semibold tracking-wider uppercase">BRAZILIAN PIZZA</span>
+              </Link>
             </header>
             <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">{children}</main>
         </SidebarInset>

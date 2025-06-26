@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/app-layout';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Pizza Profit Pilot',
+  title: 'Hey! Brazilian Pizza',
   description: "Financial management for your pizzeria.",
 };
 
