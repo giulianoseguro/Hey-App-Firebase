@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, type ReactNode, useState, useEffect } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import { useLocalStorage } from '@/hooks/use-local-storage'
 import type { Transaction, InventoryItem } from '@/types'
 
@@ -16,17 +16,14 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useLocalStorage<Transaction[]>('transactions', [])
-  const [inventory, setInventory] = useLocalStorage<InventoryItem[]>('inventory', [])
-  const [isDataReady, setIsDataReady] = useState(false)
+  const [transactions, setTransactions, isTransactionsReady] = useLocalStorage<Transaction[]>('transactions', [])
+  const [inventory, setInventory, isInventoryReady] = useLocalStorage<InventoryItem[]>('inventory', [])
 
-  useEffect(() => {
-    setIsDataReady(true)
-  }, [])
+  const isDataReady = isTransactionsReady && isInventoryReady
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
     const newTransaction = { ...transaction, id: crypto.randomUUID() }
-    setTransactions([newTransaction, ...transactions])
+    setTransactions((prev) => [newTransaction, ...prev])
   }
 
   const deleteTransaction = (id: string) => {
@@ -35,7 +32,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addInventoryItem = (item: Omit<InventoryItem, 'id'>) => {
     const newItem = { ...item, id: crypto.randomUUID() }
-    setInventory([newItem, ...inventory])
+    setInventory((prev) => [newItem, ...prev])
   }
 
   const value = {
