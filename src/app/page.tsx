@@ -7,6 +7,8 @@ import { DollarSign, Package, TrendingDown, TrendingUp } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImportDataButton } from '@/components/dashboard/import-data-button';
+import { ExportDataButton } from '@/components/dashboard/export-data-button';
 
 export default function DashboardPage() {
   const { transactions, inventory, isDataReady } = useData();
@@ -14,7 +16,12 @@ export default function DashboardPage() {
   if (!isDataReady) {
     return (
       <div className="flex animate-pulse flex-col gap-6">
-        <PageHeader title="Dashboard" description="An overview of your pizzeria's finances." />
+        <PageHeader title="Dashboard" description="An overview of your pizzeria's finances.">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </PageHeader>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Skeleton className="h-[108px] w-full" />
           <Skeleton className="h-[108px] w-full" />
@@ -59,7 +66,12 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Dashboard" description="An overview of your pizzeria's finances." />
+      <PageHeader title="Dashboard" description="An overview of your pizzeria's finances.">
+        <div className="flex items-center gap-2">
+          <ImportDataButton />
+          <ExportDataButton />
+        </div>
+      </PageHeader>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard title="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} icon={TrendingUp} href="/transactions?type=revenue" />
         <KPICard title="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} icon={TrendingDown} href="/transactions?type=expense" />

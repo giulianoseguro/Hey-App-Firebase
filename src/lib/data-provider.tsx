@@ -33,6 +33,8 @@ interface DataContextType {
   payroll: PayrollEntry[]
   addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => void
   isDataReady: boolean
+  exportAllData: () => void
+  importAllData: (jsonData: string) => void
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -140,6 +142,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, [addTransaction]);
 
+  const exportAllData = useCallback(() => {
+    const data = {
+        transactions,
+        inventory,
+        menuItems,
+        payroll,
+    };
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(data, null, 2)
+    )}`;
+    const link = document.createElement("a");
+    link.href = jsonString;
+    link.download = `pizza-profit-pilot-data-${new Date().toISOString().split('T')[0]}.json`;
+
+    link.click();
+  }, [transactions, inventory, menuItems, payroll]);
+
+  const importAllData = useCallback((jsonData: string) => {
+      try {
+        const data = JSON.parse(jsonData);
+        if (data.transactions && data.inventory && data.menuItems && data.payroll) {
+            setTransactions(data.transactions);
+            setInventory(data.inventory);
+            setMenuItems(data.menuItems);
+            setPayroll(data.payroll);
+        } else {
+            throw new Error("Invalid data format.");
+        }
+    } catch (error) {
+        console.error("Failed to import data:", error);
+        throw error;
+    }
+  }, []);
+
 
   const value = {
     transactions,
@@ -156,6 +192,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     payroll,
     addPayrollEntry,
     isDataReady,
+    exportAllData,
+    importAllData,
   }
 
   return (
