@@ -7,6 +7,7 @@ import type { Transaction, InventoryItem } from '@/types'
 interface DataContextType {
   transactions: Transaction[]
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void
+  deleteTransaction: (id: string) => void
   inventory: InventoryItem[]
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void
 }
@@ -22,13 +23,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setTransactions([newTransaction, ...transactions])
   }
 
+  const deleteTransaction = (id: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id))
+  }
+
   const addInventoryItem = (item: Omit<InventoryItem, 'id'>) => {
     const newItem = { ...item, id: crypto.randomUUID() }
     setInventory([newItem, ...inventory])
   }
 
   return (
-    <DataContext.Provider value={{ transactions, addTransaction, inventory, addInventoryItem }}>
+    <DataContext.Provider value={{ transactions, addTransaction, deleteTransaction, inventory, addInventoryItem }}>
       {children}
     </DataContext.Provider>
   )
