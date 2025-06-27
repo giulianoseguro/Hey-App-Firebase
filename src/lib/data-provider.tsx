@@ -62,7 +62,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const unsubscribes = dataPaths.map(path => {
-      const dbRef = ref(db, `${path}/`);
+      const dbRef = ref(db, path);
       return onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         const loadedItems: any[] = [];
