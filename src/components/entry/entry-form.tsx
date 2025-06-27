@@ -39,6 +39,7 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '../ui/skeleton'
 import { db } from '@/lib/firebase'
 import { ref, push, child } from 'firebase/database'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const BC_SALES_TAX_RATE = 0.12
 
@@ -47,6 +48,7 @@ const revenueSchema = z.object({
   quantity: z.coerce.number().positive('Quantity must be positive.'),
   date: z.string().min(1, 'Date is required'),
   includesTax: z.boolean(),
+  customizationIds: z.array(z.string()).default([]),
 })
 
 const expenseSchema = z.object({
@@ -66,7 +68,7 @@ const inventorySchema = z.object({
 })
 
 export function EntryForm() {
-  const { addTransactions, addInventoryItem, menuItems, isDataReady } = useData()
+  const { addTransactions, addInventoryItem, menuItems, customizations, isDataReady } = useData()
   const { toast } = useToast()
   const [aiErrors, setAiErrors] = useState<string[]>([])
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -78,7 +80,7 @@ export function EntryForm() {
   
   const revenueForm = useForm<z.infer<typeof revenueSchema>>({
     resolver: zodResolver(revenueSchema),
-    defaultValues: { menuItemId: '', quantity: 1, date: '', includesTax: true },
+    defaultValues: { menuItemId: '', quantity: 1, date: '', includesTax: true, customizationIds: [] },
   })
 
   const expenseForm = useForm<z.infer<typeof expenseSchema>>({
@@ -93,7 +95,7 @@ export function EntryForm() {
   
   useEffect(() => {
     if (today) {
-        revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true });
+        revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true, customizationIds: [] });
         expenseForm.reset({ amount: 0, description: '', category: '', date: today });
         inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' });
     }
@@ -102,7 +104,10 @@ export function EntryForm() {
 
   const watchedRevenueForm = revenueForm.watch()
   const selectedMenuItem = menuItems.find(item => item.id === watchedRevenueForm.menuItemId)
-  const totalSaleAmount = selectedMenuItem ? selectedMenuItem.price * watchedRevenueForm.quantity : 0;
+  
+  const selectedCustomizations = customizations.filter(c => watchedRevenueForm.customizationIds?.includes(c.id));
+  const totalCustomizationPrice = selectedCustomizations.reduce((sum, c) => sum + c.price, 0);
+  const totalSaleAmount = selectedMenuItem ? (selectedMenuItem.price + totalCustomizationPrice) * watchedRevenueForm.quantity : 0;
 
   const formStateForAI = {
     revenue: JSON.stringify(watchedRevenueForm),
@@ -138,6 +143,8 @@ export function EntryForm() {
   }, [debouncedFormState, fetchAIAssistance]);
 
   const onRevenueSubmit = async (values: z.infer<typeof revenueSchema>) => {
+    const selectedCustomizations = customizations.filter(c => values.customizationIds?.includes(c.id));
+
     if (!selectedMenuItem) {
       toast({ title: 'Error', description: 'Could not find selected menu item.', variant: 'destructive' })
       return;
@@ -153,13 +160,16 @@ export function EntryForm() {
       return;
     }
 
-    let revenueAmount = selectedMenuItem.price * values.quantity;
+    const totalCustomizationPrice = selectedCustomizations.reduce((sum, c) => sum + c.price, 0);
+    const totalCustomizationCost = selectedCustomizations.reduce((sum, c) => sum + c.cost, 0);
+
+    let finalSalePrice = (selectedMenuItem.price + totalCustomizationPrice) * values.quantity;
     const transactionsToAdd: Omit<import('/src/types').Transaction, 'id'>[] = [];
     
     if (values.includesTax) {
-      const preTaxRevenue = revenueAmount / (1 + BC_SALES_TAX_RATE);
-      const taxAmount = revenueAmount - preTaxRevenue;
-      revenueAmount = preTaxRevenue;
+      const preTaxRevenue = finalSalePrice / (1 + BC_SALES_TAX_RATE);
+      const taxAmount = finalSalePrice - preTaxRevenue;
+      finalSalePrice = preTaxRevenue;
       
       transactionsToAdd.push({
         type: 'expense',
@@ -171,7 +181,7 @@ export function EntryForm() {
       });
     }
 
-    const cogsAmount = selectedMenuItem.cost * values.quantity;
+    const cogsAmount = (selectedMenuItem.cost + totalCustomizationCost) * values.quantity;
     transactionsToAdd.push({
       type: 'expense',
       date: values.date,
@@ -181,11 +191,15 @@ export function EntryForm() {
       saleId: saleId,
     });
 
+    const customizationDescription = selectedCustomizations.length > 0
+      ? ` (${selectedCustomizations.map(c => c.name).join(', ')})`
+      : '';
+
     transactionsToAdd.push({
       type: 'revenue',
       date: values.date,
-      amount: revenueAmount,
-      description: `Sale: ${values.quantity} x ${selectedMenuItem.name}`,
+      amount: finalSalePrice,
+      description: `Sale: ${values.quantity} x ${selectedMenuItem.name}${customizationDescription}`,
       category: 'Sales',
       menuItemId: values.menuItemId,
       quantity: values.quantity,
@@ -195,7 +209,7 @@ export function EntryForm() {
     try {
       await addTransactions(transactionsToAdd);
       toast({ title: 'Success', description: `Sale of ${selectedMenuItem.name} recorded.` });
-      revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true });
+      revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true, customizationIds: [] });
     } catch (error) {
        toast({
         title: 'Save Failed',
@@ -265,7 +279,10 @@ export function EntryForm() {
                   <FormField control={revenueForm.control} name="menuItemId" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Menu Item</FormLabel>
-                       <Select onValueChange={field.onChange} value={field.value}>
+                       <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            revenueForm.setValue('customizationIds', []);
+                       }} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger>
                         </FormControl>
@@ -284,6 +301,49 @@ export function EntryForm() {
                     </FormItem>
                   )} />
                 </div>
+                {selectedMenuItem?.category === 'pizza' && customizations.length > 0 && (
+                    <div className="space-y-2">
+                        <Label>Customizations</Label>
+                        <FormField
+                            control={revenueForm.control}
+                            name="customizationIds"
+                            render={() => (
+                                <FormItem className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                {customizations.map((item) => (
+                                    <FormField
+                                    key={item.id}
+                                    control={revenueForm.control}
+                                    name="customizationIds"
+                                    render={({ field }) => {
+                                        return (
+                                        <FormItem key={item.id} className="flex flex-row items-center space-x-2 space-y-0">
+                                            <FormControl>
+                                            <Checkbox
+                                                checked={field.value?.includes(item.id)}
+                                                onCheckedChange={(checked) => {
+                                                return checked
+                                                    ? field.onChange([...field.value, item.id])
+                                                    : field.onChange(
+                                                        field.value?.filter(
+                                                        (value) => value !== item.id
+                                                        )
+                                                    )
+                                                }}
+                                            />
+                                            </FormControl>
+                                            <FormLabel className="font-normal text-sm">
+                                            {item.name} (+${item.price.toFixed(2)})
+                                            </FormLabel>
+                                        </FormItem>
+                                        )
+                                    }}
+                                    />
+                                ))}
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2">
                    <FormField control={revenueForm.control} name="date" render={({ field }) => (
                     <FormItem>

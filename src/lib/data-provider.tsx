@@ -2,7 +2,7 @@
 'use client'
 
 import { createContext, useContext, type ReactNode, useCallback, useState, useEffect } from 'react'
-import type { Transaction, InventoryItem, MenuItem, PayrollEntry } from '@/types'
+import type { Transaction, InventoryItem, MenuItem, PayrollEntry, Customization } from '@/types'
 import { db, isDbInitialized } from './firebase'
 import { ref, onValue, push, set, remove, update, child, get } from 'firebase/database'
 import { useToast } from '@/hooks/use-toast'
@@ -22,6 +22,7 @@ interface DataContextType {
   addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay' | 'transactionId'>) => Promise<void>
   updatePayrollEntry: (id: string, data: Omit<PayrollEntry, 'id' | 'netPay'>) => Promise<void>
   deletePayrollEntry: (entry: PayrollEntry) => Promise<void>
+  customizations: Customization[]
   isDataReady: boolean
   isDbConnected: boolean
 }
@@ -29,25 +30,36 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 const defaultMenuItems: Omit<MenuItem, 'id'>[] = [
-  { name: 'Cheese (Mozzarella)', price: 24.00, cost: 7.20 },
-  { name: 'Pepperoni', price: 26.00, cost: 7.80 },
-  { name: 'Ham & Corn', price: 28.00, cost: 8.40 },
-  { name: 'Bacon & Corn', price: 28.00, cost: 8.40 },
-  { name: 'Calabresa (Brazilian Sausage)', price: 28.00, cost: 8.40 },
-  { name: 'Frango com Catupiry (Shredded Chicken with Brazilian Cream Cheese)', price: 30.00, cost: 9.00 },
-  { name: 'Portuguesa (Ham, egg, onion, green olives)', price: 32.00, cost: 9.60 },
-  { name: 'Canadian Bacon with Pineapple', price: 28.00, cost: 8.40 },
-  { name: 'Canadian Bacon with Fig', price: 28.00, cost: 8.40 },
-  { name: 'Caipira (Shredded chicken with corn and green olives)', price: 30.00, cost: 9.00 },
-  { name: 'Vegetarian (Green pepper, onion, tomato, green olives and corn)', price: 28.00, cost: 8.40 },
-  { name: '4 Cheese (Mozzarella, Provolone, Parmesan and Cream Cheese)', price: 30.00, cost: 9.00 },
-  { name: 'Carne Seca com Catupiry (Jerk beef with Brazilian Cream Cheese)', price: 34.00, cost: 10.20 },
-  { name: 'Shrimp with Catupiry (Brazilian Cream Cheese)', price: 34.00, cost: 10.20 },
-  { name: 'Aliche (Anchovies)', price: 30.00, cost: 9.00 },
-  { name: 'Brocolis with bacon', price: 30.00, cost: 9.00 },
-  { name: 'Brigadeiro (Brazilian Chocolate Truffle)', price: 28.00, cost: 8.40 },
-  { name: 'Prestígio (Chocolate and Coconut)', price: 28.00, cost: 8.40 },
-  { name: 'Romeu & Julieta (Guava Paste and Mozzarella Cheese)', price: 28.00, cost: 8.40 },
+  // Savory Pizzas
+  { name: 'Cheese (Mozzarella)', price: 24.00, cost: 7.20, category: 'pizza' },
+  { name: 'Pepperoni', price: 26.00, cost: 7.80, category: 'pizza' },
+  { name: 'Ham & Corn', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: 'Bacon & Corn', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: 'Calabresa (Brazilian Sausage)', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: 'Frango com Catupiry (Shredded Chicken with Brazilian Cream Cheese)', price: 30.00, cost: 9.00, category: 'pizza' },
+  { name: 'Portuguesa (Ham, egg, onion, green olives)', price: 32.00, cost: 9.60, category: 'pizza' },
+  { name: 'Canadian Bacon with Pineapple', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: 'Canadian Bacon with Fig', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: 'Caipira (Shredded chicken with corn and green olives)', price: 30.00, cost: 9.00, category: 'pizza' },
+  { name: 'Vegetarian (Green pepper, onion, tomato, green olives and corn)', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: '4 Cheese (Mozzarella, Provolone, Parmesan and Cream Cheese)', price: 30.00, cost: 9.00, category: 'pizza' },
+  { name: 'Carne Seca com Catupiry (Jerk beef with Brazilian Cream Cheese)', price: 34.00, cost: 10.20, category: 'pizza' },
+  { name: 'Shrimp with Catupiry (Brazilian Cream Cheese)', price: 34.00, cost: 10.20, category: 'pizza' },
+  { name: 'Aliche (Anchovies)', price: 30.00, cost: 9.00, category: 'pizza' },
+  { name: 'Brocolis with bacon', price: 30.00, cost: 9.00, category: 'pizza' },
+  // Sweet Pizzas
+  { name: 'Brigadeiro (Brazilian Chocolate Truffle)', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: 'Prestígio (Chocolate and Coconut)', price: 28.00, cost: 8.40, category: 'pizza' },
+  { name: 'Romeu & Julieta (Guava Paste and Mozzarella Cheese)', price: 28.00, cost: 8.40, category: 'pizza' },
+  // Beverages
+  { name: 'Soda (Can)', price: 3.00, cost: 1.00, category: 'beverage' },
+  { name: 'Guaraná Antárctica (Can)', price: 3.50, cost: 1.25, category: 'beverage' },
+  { name: 'Water Bottle', price: 2.50, cost: 0.75, category: 'beverage' },
+];
+
+const defaultCustomizations: Omit<Customization, 'id'>[] = [
+  { name: 'Borda de Catupiry (Stuffed Crust)', price: 5.99, cost: 1.50 },
+  { name: 'Borda de Cheddar (Stuffed Crust)', price: 5.99, cost: 1.50 },
 ];
 
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -56,12 +68,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [payroll, setPayroll] = useState<PayrollEntry[]>([]);
+  const [customizations, setCustomizations] = useState<Customization[]>([]);
   
   const [loadingStates, setLoadingStates] = useState({
     transactions: true,
     inventory: true,
     menuItems: true,
     payroll: true,
+    customizations: true,
   });
 
   const isDataReady = !Object.values(loadingStates).some(Boolean);
@@ -69,6 +83,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const seedDatabase = useCallback(async () => {
     if (!db) return;
     try {
+      // Seed Menu Items
       const menuItemsSnapshot = await get(ref(db, 'menuItems'));
       if (!menuItemsSnapshot.exists()) {
         console.log('No menu items found. Seeding database...');
@@ -87,11 +102,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
         }
       }
+      // Seed Customizations
+      const customizationsSnapshot = await get(ref(db, 'customizations'));
+       if (!customizationsSnapshot.exists()) {
+        console.log('No customizations found. Seeding database...');
+        const updates: { [key: string]: any } = {};
+        defaultCustomizations.forEach(item => {
+          const newKey = push(child(ref(db), 'customizations')).key;
+          if (newKey) {
+            updates[`/customizations/${newKey}`] = item;
+          }
+        });
+        if (Object.keys(updates).length > 0) {
+          await update(ref(db), updates);
+        }
+      }
+
     } catch (error) {
       console.error("Database seeding failed:", error);
       toast({
         title: 'Seeding Failed',
-        description: error instanceof Error ? error.message : 'Could not add default menu items.',
+        description: error instanceof Error ? error.message : 'Could not add default data.',
         variant: 'destructive',
       });
     }
@@ -105,26 +136,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isDbInitialized) {
-      toast({
-        title: 'Database Not Connected',
-        description: 'Your Firebase credentials may be missing or incorrect. Data cannot be loaded or saved.',
-        variant: 'destructive',
-      });
       setLoadingStates({
         transactions: false,
         inventory: false,
         menuItems: false,
         payroll: false,
+        customizations: false,
       });
       return;
     }
 
-    const dataPaths = ['transactions', 'inventory', 'menuItems', 'payroll'];
+    const dataPaths = ['transactions', 'inventory', 'menuItems', 'payroll', 'customizations'];
     const setters = {
       transactions: setTransactions,
       inventory: setInventory,
       menuItems: setMenuItems,
       payroll: setPayroll,
+      customizations: setCustomizations,
     };
 
     const unsubscribes = dataPaths.map(path => {
@@ -311,6 +339,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addPayrollEntry,
     updatePayrollEntry,
     deletePayrollEntry,
+    customizations,
     isDataReady,
     isDbConnected: isDbInitialized,
   }

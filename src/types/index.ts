@@ -25,6 +25,7 @@ export interface MenuItem {
   name: string;
   price: number;
   cost: number;
+  category: 'pizza' | 'beverage' | 'other';
 }
 
 export interface PayrollEntry {
@@ -35,4 +36,11 @@ export interface PayrollEntry {
   deductions: number;
   netPay: number;
   transactionId: string; // ID of the associated expense transaction
+}
+
+export interface Customization {
+  id: string;
+  name: string;
+  price: number;
+  cost: number;
 }
