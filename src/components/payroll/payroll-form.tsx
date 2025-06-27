@@ -19,7 +19,7 @@ const payrollSchema = z.object({
 })
 
 export function PayrollForm() {
-  const { addPayrollEntry } = useData()
+  const { addPayrollEntry, isDbConnected } = useData()
   const { toast } = useToast()
   const [today, setToday] = useState('')
 
@@ -135,7 +135,7 @@ export function PayrollForm() {
                   </FormItem>
                 )}
               />
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={!isDbConnected}>
               Record Payroll
             </Button>
           </form>

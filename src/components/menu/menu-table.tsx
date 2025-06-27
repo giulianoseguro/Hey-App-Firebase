@@ -41,7 +41,7 @@ interface MenuTableProps {
 }
 
 export function MenuTable({ data }: MenuTableProps) {
-  const { deleteMenuItem } = useData()
+  const { deleteMenuItem, isDbConnected } = useData()
   const { toast } = useToast()
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -64,7 +64,7 @@ export function MenuTable({ data }: MenuTableProps) {
       <div className="flex justify-end">
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-             <Button>
+             <Button disabled={!isDbConnected}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Menu Item
             </Button>
@@ -114,13 +114,14 @@ export function MenuTable({ data }: MenuTableProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => setEditingItem(item)}
+                      disabled={!isDbConnected}
                     >
                       <Edit className="h-4 w-4" />
                       <span className="sr-only">Edit Item</span>
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" disabled={!isDbConnected}>
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Delete Item</span>
                         </Button>

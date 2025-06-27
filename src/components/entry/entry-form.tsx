@@ -62,7 +62,7 @@ const inventorySchema = z.object({
 })
 
 export function EntryForm() {
-  const { addTransactions, addInventoryItem, menuItems, isDataReady } = useData()
+  const { addTransactions, addInventoryItem, menuItems, isDataReady, isDbConnected } = useData()
   const { toast } = useToast()
   const [aiErrors, setAiErrors] = useState<string[]>([])
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -272,7 +272,7 @@ export function EntryForm() {
                         </FormItem>
                     )} />
                 </div>
-                <Button type="submit">Add Sale</Button>
+                <Button type="submit" disabled={!isDbConnected}>Add Sale</Button>
               </form>
             </Form>
           </CardContent>
@@ -300,7 +300,7 @@ export function EntryForm() {
                 <FormField control={expenseForm.control} name="description" render={({ field }) => (
                     <FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Monthly rent payment" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <Button type="submit">Add Expense</Button>
+                <Button type="submit" disabled={!isDbConnected}>Add Expense</Button>
               </form>
             </Form>
           </CardContent>
@@ -338,7 +338,7 @@ export function EntryForm() {
                         <FormItem><FormLabel>Expiry Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                 </div>
-                <Button type="submit">Add to Inventory</Button>
+                <Button type="submit" disabled={!isDbConnected}>Add to Inventory</Button>
               </form>
             </Form>
           </CardContent>

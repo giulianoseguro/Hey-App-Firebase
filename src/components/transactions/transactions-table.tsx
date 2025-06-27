@@ -42,7 +42,7 @@ interface TransactionsTableProps {
 }
 
 export function TransactionsTable({ data }: TransactionsTableProps) {
-  const { deleteTransaction } = useData()
+  const { deleteTransaction, isDbConnected } = useData()
   const { toast } = useToast()
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
@@ -102,13 +102,14 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => setEditingTransaction(transaction)}
+                      disabled={!isDbConnected}
                     >
                       <Edit className="h-4 w-4" />
                       <span className="sr-only">Edit Transaction</span>
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" disabled={!isDbConnected}>
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Delete Transaction</span>
                         </Button>

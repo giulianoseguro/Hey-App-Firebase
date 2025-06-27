@@ -1,6 +1,8 @@
 import { initializeApp, getApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
 import { getDatabase, type Database } from 'firebase/database';
 
+export let isDbInitialized = false;
+
 // Your web app's Firebase configuration
 // IMPORTANT: Replace with your actual config from the Firebase Console
 const firebaseConfig: FirebaseOptions = {
@@ -35,6 +37,7 @@ if (areFirebaseCredsSet) {
   if (app) {
      try {
         db = getDatabase(app);
+        isDbInitialized = true;
     } catch (error) {
         console.error("Firebase Database initialization failed:", error);
         // db remains undefined, app will run in a fallback mode

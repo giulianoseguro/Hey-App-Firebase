@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type ReactNode, useCallback, useState, useEffect } from 'react'
 import type { Transaction, InventoryItem, MenuItem, PayrollEntry } from '@/types'
-import { db } from './firebase'
+import { db, isDbInitialized } from './firebase'
 import { ref, onValue, push, set, remove, update, child } from 'firebase/database'
 
 
@@ -21,6 +21,7 @@ interface DataContextType {
   payroll: PayrollEntry[]
   addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => void
   isDataReady: boolean
+  isDbConnected: boolean
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -189,6 +190,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     payroll,
     addPayrollEntry,
     isDataReady,
+    isDbConnected: isDbInitialized,
   }
 
   return (

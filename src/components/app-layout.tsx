@@ -12,13 +12,33 @@ import {
 } from '@/components/ui/sidebar';
 import { MainNav } from '@/components/main-nav';
 import { Button } from './ui/button';
-import { PlusCircle, Pizza } from 'lucide-react';
+import { PlusCircle, Pizza, Terminal } from 'lucide-react';
 import Link from 'next/link';
+import { useData } from '@/lib/data-provider';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const DataProvider = dynamic(
   () => import('@/lib/data-provider').then((mod) => mod.DataProvider),
   { ssr: false }
 );
+
+function DbStatusBanner() {
+  const { isDbConnected, isDataReady } = useData();
+
+  if (isDataReady && !isDbConnected) {
+    return (
+       <Alert variant="destructive" className="mb-4">
+            <Terminal className="h-4 w-4" />
+            <AlertTitle>Database Not Connected</AlertTitle>
+            <AlertDescription>
+              The application could not connect to the database. Any data you enter will not be saved. Please ensure your Firebase credentials are correctly configured for this deployment.
+            </AlertDescription>
+          </Alert>
+    );
+  }
+
+  return null;
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -55,7 +75,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="text-sm font-semibold tracking-wider uppercase">BRAZILIAN PIZZA</span>
               </Link>
             </header>
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">{children}</main>
+            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+              <DbStatusBanner />
+              {children}
+            </main>
         </SidebarInset>
       </SidebarProvider>
     </DataProvider>
