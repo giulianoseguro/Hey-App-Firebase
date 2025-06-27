@@ -13,7 +13,9 @@ interface DataContextType {
   deleteTransaction: (id: string) => Promise<void>
   updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => Promise<void>
   inventory: InventoryItem[]
-  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>
+  addInventoryItem: (item: Omit<InventoryItem, 'id' | 'transactionId'>) => Promise<void>
+  updateInventoryItem: (id: string, data: Omit<InventoryItem, 'id' | 'transactionId'>) => Promise<void>
+  deleteInventoryItem: (item: InventoryItem) => Promise<void>
   menuItems: MenuItem[]
   addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>
   updateMenuItem: (id: string, data: Omit<MenuItem, 'id'>) => Promise<void>
@@ -223,7 +225,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await update(ref(db, `transactions/${id}`), data)
   }, []);
 
-  const addInventoryItem = useCallback(async (item: Omit<InventoryItem, 'id'>) => {
+  const addInventoryItem = useCallback(async (item: Omit<InventoryItem, 'id' | 'transactionId'>) => {
     if (!db) throw new Error('Database not connected.');
     
     const newInventoryKey = push(child(ref(db), 'inventory')).key;
@@ -232,6 +234,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (!newInventoryKey || !newTransactionKey) {
       throw new Error("Failed to generate unique keys for new items.");
     }
+
+    const inventoryData: Omit<InventoryItem, 'id'> = {
+        ...item,
+        transactionId: newTransactionKey,
+    };
 
     const transactionData = {
       type: 'expense' as const,
@@ -242,12 +249,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const updates: { [key:string]: any } = {};
-    updates[`/inventory/${newInventoryKey}`] = item;
+    updates[`/inventory/${newInventoryKey}`] = inventoryData;
     updates[`/transactions/${newTransactionKey}`] = transactionData;
 
     await update(ref(db), updates)
   }, []);
   
+  const updateInventoryItem = useCallback(async (id: string, data: Omit<InventoryItem, 'id' | 'transactionId'>) => {
+    if (!db) throw new Error('Database not connected.');
+    
+    const itemToUpdate = inventory.find(i => i.id === id);
+    if (!itemToUpdate) throw new Error("Inventory item not found");
+
+    const inventoryData: Omit<InventoryItem, 'id'> = {
+        ...data,
+        transactionId: itemToUpdate.transactionId,
+    };
+
+    const transactionData = {
+        type: 'expense' as const,
+        date: data.purchaseDate,
+        amount: data.totalCost,
+        description: `Purchase: ${data.quantity} ${data.unit} of ${data.name}`,
+        category: 'Inventory Purchase',
+    };
+
+    const updates: { [key: string]: any } = {};
+    updates[`/inventory/${id}`] = inventoryData;
+    updates[`/transactions/${itemToUpdate.transactionId}`] = transactionData;
+
+    await update(ref(db), updates);
+}, [inventory]);
+
+  const deleteInventoryItem = useCallback(async (item: InventoryItem) => {
+    if (!db) throw new Error('Database not connected.');
+    const updates: { [key: string]: null } = {};
+    updates[`/inventory/${item.id}`] = null;
+    if (item.transactionId) {
+        updates[`/transactions/${item.transactionId}`] = null;
+    }
+    await update(ref(db), updates);
+  }, []);
+
   const addMenuItem = useCallback(async (item: Omit<MenuItem, 'id'>) => {
     if (!db) throw new Error('Database not connected.');
     const newMenuItemRef = push(ref(db, 'menuItems'));
@@ -331,6 +374,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updateTransaction,
     inventory,
     addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
     menuItems,
     addMenuItem,
     updateMenuItem,

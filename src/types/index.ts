@@ -18,6 +18,7 @@ export interface InventoryItem {
   purchaseDate: string; // ISO string
   expiryDate: string; // ISO string
   totalCost: number;
+  transactionId: string; // ID of the associated expense transaction
 }
 
 export interface MenuItem {
