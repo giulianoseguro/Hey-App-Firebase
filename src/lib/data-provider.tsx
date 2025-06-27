@@ -182,7 +182,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribes.forEach(unsubscribe => unsubscribe());
-  }, [toast]);
+  }, [isDbInitialized, toast]);
 
 
   const addTransactions = useCallback(async (transactionsToAdd: Omit<Transaction, 'id'>[]) => {
