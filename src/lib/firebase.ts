@@ -1,18 +1,18 @@
+
 import { initializeApp, getApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
 import { getDatabase, type Database } from 'firebase/database';
 
 export let isDbInitialized = false;
 
 // Your web app's Firebase configuration
-// IMPORTANT: Replace with your actual config from the Firebase Console
 const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyCzJbv7SALnfh87QAKHiLPmgQoEuU-EIFE",
+  authDomain: "pizza-profit-pilot.firebaseapp.com",
+  databaseURL: "https://pizza-profit-pilot-default-rtdb.firebaseio.com",
+  projectId: "pizza-profit-pilot",
+  storageBucket: "pizza-profit-pilot.firebasestorage.app",
+  messagingSenderId: "447092193869",
+  appId: "1:447092193869:web:805d299d65623e2b6b7a04"
 };
 
 let app: FirebaseApp | undefined;
@@ -44,7 +44,7 @@ if (areFirebaseCredsSet) {
     }
   }
 } else {
-    console.warn("Firebase credentials are not set correctly in your .env file. The app will run without a database connection.");
+    console.warn("Firebase credentials are not set correctly. The app will run without a database connection.");
 }
 
 export { db };
