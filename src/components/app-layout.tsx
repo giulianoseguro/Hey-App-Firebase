@@ -22,7 +22,7 @@ const DataProvider = dynamic(
 );
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const logoUrl = "https://firebasestorage.googleapis.com/v0/b/pizza-profit-pilot.appspot.com/o/hey%20logo.webp?alt=media";
+  const logoUrl = "https://firebasestorage.googleapis.com/v0/b/pizza-profit-pilot.firebasestorage.app/o/hey%20logo.webp?alt=media";
 
   return (
     <DataProvider>
