@@ -48,7 +48,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Button asChild className="w-full">
               <Link href="/entry">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                New Entry
+                New Data Entry
               </Link>
             </Button>
           </SidebarFooter>
