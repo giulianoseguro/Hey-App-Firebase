@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ComposedChart } from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import {
   Card,
   CardContent,
@@ -60,7 +60,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
       <CardContent>
       {chartData.length > 0 ? (
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <ComposedChart data={chartData}>
+          <BarChart data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="name"
@@ -73,8 +73,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <Tooltip content={<ChartTooltipContent />} />
             <Legend />
             <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
-            <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
-          </ComposedChart>
+            <Bar dataKey="expenses" fill="var(--color-expenses)" radius={4} />
+          </BarChart>
         </ChartContainer>
          ) : (
           <div className="flex h-[300px] w-full items-center justify-center text-muted-foreground">
