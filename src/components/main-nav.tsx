@@ -1,8 +1,9 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
 import { LayoutDashboard, FileText, Package, History, BarChart3, BookOpenText, Users } from 'lucide-react';
 
 const navLinks = [
@@ -17,6 +18,7 @@ const navLinks = [
 
 export function MainNav() {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
 
   return (
     <SidebarMenu>
@@ -30,6 +32,7 @@ export function MainNav() {
               asChild
               isActive={isActive}
               tooltip={link.label}
+              onClick={() => setOpenMobile(false)}
             >
               <Link href={link.href}>
                 <Icon />
