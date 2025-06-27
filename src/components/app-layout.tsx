@@ -1,3 +1,4 @@
+
 'use client';
 
 import dynamic from 'next/dynamic';
@@ -22,7 +23,7 @@ const DataProvider = dynamic(
 );
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const logoUrl = "https://firebasestorage.googleapis.com/v0/b/pizza-profit-pilot.firebasestorage.app/o/hey%20logo.webp?alt=media";
+  const logoUrl = "https://firebasestorage.googleapis.com/v0/b/pizza-profit-pilot.firebasestorage.app/o/hey%20logo.webp?alt=media&token=cd94d106-808f-420b-8b46-d2c0d08ef769";
 
   return (
     <DataProvider>
