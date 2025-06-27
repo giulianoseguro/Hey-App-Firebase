@@ -206,9 +206,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     
     const updates: { [key: string]: null } = {};
-    updates[`/transactions/${id}`] = null;
+    updates[`/transactions/${id}`] = null; // Mark the initial one for deletion
 
-    // If part of a sale, delete all related transactions
+    // If it's part of a sale, delete all associated transactions
     if (transactionToDelete.saleId) {
       transactions.forEach(t => {
         if (t.saleId === transactionToDelete.saleId) {
@@ -217,8 +217,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
       });
     }
     
-    await update(ref(db), updates)
-  }, [transactions]);
+    // If it's an Inventory Purchase, delete the linked inventory item
+    if (transactionToDelete.category === 'Inventory Purchase') {
+        const linkedInventoryItem = inventory.find(i => i.transactionId === id);
+        if (linkedInventoryItem) {
+            updates[`/inventory/${linkedInventoryItem.id}`] = null;
+        }
+    }
+
+    // If it's a Payroll expense, delete the linked payroll entry
+    if (transactionToDelete.category === 'Payroll') {
+        const linkedPayrollEntry = payroll.find(p => p.transactionId === id);
+        if (linkedPayrollEntry) {
+            updates[`/payroll/${linkedPayrollEntry.id}`] = null;
+        }
+    }
+
+    await update(ref(db), updates);
+  }, [transactions, inventory, payroll]);
 
   const updateTransaction = useCallback(async (id: string, data: Partial<Omit<Transaction, 'id'>>) => {
     if (!db) throw new Error('Database not connected.');

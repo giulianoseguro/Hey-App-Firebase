@@ -75,18 +75,33 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
     }
   }
 
-  const getTooltipContent = (category: string) => {
-    switch(category) {
-        case 'Payroll':
-            return 'This is a payroll expense. Please manage it on the Payroll page.';
-        case 'Cost of Goods Sold':
-        case 'Taxes':
-            return "This is part of a sale. To modify it, delete the original revenue transaction.";
-        case 'Inventory Purchase':
-            return "This was created from an inventory entry. Manage it from the Inventory page.";
-        default:
-            return "This transaction cannot be edited directly.";
+  const getTooltipContent = (transaction: Transaction) => {
+    switch (transaction.category) {
+      case 'Payroll':
+        return 'This is a payroll expense. Please manage it on the Payroll page.'
+      case 'Cost of Goods Sold':
+      case 'Taxes':
+        return 'This is part of a sale. It cannot be edited individually.'
+      case 'Inventory Purchase':
+        return 'This was created from an inventory entry. Manage it from the Inventory page.'
+      case 'Sales': // This is the revenue category
+        return "Sales revenue cannot be edited directly. Please delete this entry and create a new one if needed."
+      default:
+        return 'This transaction cannot be edited directly.'
     }
+  }
+
+  const getDeletionAlertDescription = (transaction: Transaction) => {
+    if (transaction.saleId) {
+        return 'This action cannot be undone. This will permanently delete this transaction and all linked sale entries (COGS, Taxes).'
+    }
+    if (transaction.category === 'Inventory Purchase') {
+        return 'This action cannot be undone. This will permanently delete this expense and the linked item in your inventory.'
+    }
+    if (transaction.category === 'Payroll') {
+        return 'This action cannot be undone. This will permanently delete this expense and the linked entry on the payroll page.'
+    }
+    return 'This action cannot be undone. This will permanently delete this transaction.'
   }
 
   return (
@@ -102,14 +117,14 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="w-[100px] text-right">
-                  <span className="sr-only">Actions</span>
+                  Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.length > 0 ? (
                 data.map((transaction) => {
-                  const isManaged = MANAGED_CATEGORIES.includes(transaction.category)
+                  const isEditable = !MANAGED_CATEGORIES.includes(transaction.category) && transaction.type !== 'revenue'
 
                   return (
                     <TableRow key={transaction.id}>
@@ -139,41 +154,33 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
                       <TableCell className="text-right">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span tabIndex={isManaged ? 0 : -1}>
+                            <span tabIndex={!isEditable ? 0 : -1}>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                disabled={isManaged}
-                                onClick={() => !isManaged && setEditingTransaction(transaction)}
+                                disabled={!isEditable}
+                                onClick={() => isEditable && setEditingTransaction(transaction)}
                               >
                                 <Edit className="h-4 w-4" />
                                 <span className="sr-only">Edit Transaction</span>
                               </Button>
                             </span>
                           </TooltipTrigger>
-                          {isManaged && <TooltipContent><p>{getTooltipContent(transaction.category)}</p></TooltipContent>}
+                          {!isEditable && <TooltipContent><p>{getTooltipContent(transaction)}</p></TooltipContent>}
                         </Tooltip>
 
                         <AlertDialog>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span tabIndex={isManaged ? 0 : -1}>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" disabled={isManaged}>
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Delete Transaction</span>
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                </span>
-                            </TooltipTrigger>
-                            {isManaged && <TooltipContent><p>{getTooltipContent(transaction.category)}</p></TooltipContent>}
-                          </Tooltip>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete Transaction</span>
+                              </Button>
+                          </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This action cannot be undone. This will permanently
-                                delete this transaction {transaction.saleId ? 'and all linked sale entries.' : '.'}
+                                {getDeletionAlertDescription(transaction)}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
