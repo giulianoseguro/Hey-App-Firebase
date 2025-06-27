@@ -28,6 +28,28 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
+const defaultMenuItems: Omit<MenuItem, 'id'>[] = [
+  { name: 'Cheese (Mozzarella)', price: 24.00, cost: 7.20 },
+  { name: 'Pepperoni', price: 26.00, cost: 7.80 },
+  { name: 'Ham & Corn', price: 28.00, cost: 8.40 },
+  { name: 'Bacon & Corn', price: 28.00, cost: 8.40 },
+  { name: 'Calabresa (Brazilian Sausage)', price: 28.00, cost: 8.40 },
+  { name: 'Frango com Catupiry (Shredded Chicken with Brazilian Cream Cheese)', price: 30.00, cost: 9.00 },
+  { name: 'Portuguesa (Ham, egg, onion, green olives)', price: 32.00, cost: 9.60 },
+  { name: 'Canadian Bacon with Pineapple', price: 28.00, cost: 8.40 },
+  { name: 'Canadian Bacon with Fig', price: 28.00, cost: 8.40 },
+  { name: 'Caipira (Shredded chicken with corn and green olives)', price: 30.00, cost: 9.00 },
+  { name: 'Vegetarian (Green pepper, onion, tomato, green olives and corn)', price: 28.00, cost: 8.40 },
+  { name: '4 Cheese (Mozzarella, Provolone, Parmesan and Cream Cheese)', price: 30.00, cost: 9.00 },
+  { name: 'Carne Seca com Catupiry (Jerk beef with Brazilian Cream Cheese)', price: 34.00, cost: 10.20 },
+  { name: 'Shrimp with Catupiry (Brazilian Cream Cheese)', price: 34.00, cost: 10.20 },
+  { name: 'Aliche (Anchovies)', price: 30.00, cost: 9.00 },
+  { name: 'Brocolis with bacon', price: 30.00, cost: 9.00 },
+  { name: 'Brigadeiro (Brazilian Chocolate Truffle)', price: 28.00, cost: 8.40 },
+  { name: 'Prestígio (Chocolate and Coconut)', price: 28.00, cost: 8.40 },
+  { name: 'Romeu & Julieta (Guava Paste and Mozzarella Cheese)', price: 28.00, cost: 8.40 },
+];
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast()
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -43,6 +65,43 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
 
   const isDataReady = !Object.values(loadingStates).some(Boolean);
+
+  const seedDatabase = useCallback(async () => {
+    if (!db) return;
+    try {
+      const menuItemsSnapshot = await get(ref(db, 'menuItems'));
+      if (!menuItemsSnapshot.exists()) {
+        console.log('No menu items found. Seeding database...');
+        const updates: { [key: string]: any } = {};
+        defaultMenuItems.forEach(item => {
+          const newKey = push(child(ref(db), 'menuItems')).key;
+          if (newKey) {
+            updates[`/menuItems/${newKey}`] = item;
+          }
+        });
+        if (Object.keys(updates).length > 0) {
+          await update(ref(db), updates);
+          toast({
+            title: 'Menu Seeded!',
+            description: 'We\'ve added the menu items from your website.',
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Database seeding failed:", error);
+      toast({
+        title: 'Seeding Failed',
+        description: error instanceof Error ? error.message : 'Could not add default menu items.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    if (isDbInitialized) {
+      seedDatabase();
+    }
+  }, [isDbInitialized, seedDatabase]);
 
   useEffect(() => {
     if (!isDbInitialized) {
