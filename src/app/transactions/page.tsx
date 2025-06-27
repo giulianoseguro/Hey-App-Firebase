@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useData } from '@/lib/data-provider'
@@ -15,6 +16,7 @@ import { PageHeader } from '@/components/page-header'
 import { TransactionsTable } from '@/components/transactions/transactions-table'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { parseISO } from 'date-fns'
 
 export default function TransactionsPage() {
   const { transactions, isDataReady } = useData()
@@ -38,7 +40,7 @@ export default function TransactionsPage() {
   }
 
   const sortedTransactions = [...transactions].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    (a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()
   )
 
   const filteredTransactions = sortedTransactions
