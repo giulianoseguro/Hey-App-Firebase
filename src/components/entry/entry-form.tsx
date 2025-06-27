@@ -48,7 +48,7 @@ const revenueSchema = z.object({
   quantity: z.coerce.number().positive('Quantity must be positive.'),
   date: z.string().min(1, 'Date is required'),
   includesTax: z.boolean(),
-  customizationIds: z.array(z.string()).default([]),
+  customizationId: z.string().optional(),
 })
 
 const expenseSchema = z.object({
@@ -80,7 +80,7 @@ export function EntryForm() {
   
   const revenueForm = useForm<z.infer<typeof revenueSchema>>({
     resolver: zodResolver(revenueSchema),
-    defaultValues: { menuItemId: '', quantity: 1, date: '', includesTax: true, customizationIds: [] },
+    defaultValues: { menuItemId: '', quantity: 1, date: '', includesTax: true, customizationId: undefined },
   })
 
   const expenseForm = useForm<z.infer<typeof expenseSchema>>({
@@ -95,7 +95,7 @@ export function EntryForm() {
   
   useEffect(() => {
     if (today) {
-        revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true, customizationIds: [] });
+        revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true, customizationId: undefined });
         expenseForm.reset({ amount: 0, description: '', category: '', date: today });
         inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' });
     }
@@ -105,8 +105,8 @@ export function EntryForm() {
   const watchedRevenueForm = revenueForm.watch()
   const selectedMenuItem = menuItems.find(item => item.id === watchedRevenueForm.menuItemId)
   
-  const selectedCustomizations = customizations.filter(c => watchedRevenueForm.customizationIds?.includes(c.id));
-  const totalCustomizationPrice = selectedCustomizations.reduce((sum, c) => sum + c.price, 0);
+  const selectedCustomization = customizations.find(c => c.id === watchedRevenueForm.customizationId);
+  const totalCustomizationPrice = selectedCustomization ? selectedCustomization.price : 0;
   const totalSaleAmount = selectedMenuItem ? (selectedMenuItem.price + totalCustomizationPrice) * watchedRevenueForm.quantity : 0;
 
   const formStateForAI = {
@@ -143,7 +143,7 @@ export function EntryForm() {
   }, [debouncedFormState, fetchAIAssistance]);
 
   const onRevenueSubmit = async (values: z.infer<typeof revenueSchema>) => {
-    const selectedCustomizations = customizations.filter(c => values.customizationIds?.includes(c.id));
+    const selectedCustomization = customizations.find(c => c.id === values.customizationId);
 
     if (!selectedMenuItem) {
       toast({ title: 'Error', description: 'Could not find selected menu item.', variant: 'destructive' })
@@ -160,8 +160,8 @@ export function EntryForm() {
       return;
     }
 
-    const totalCustomizationPrice = selectedCustomizations.reduce((sum, c) => sum + c.price, 0);
-    const totalCustomizationCost = selectedCustomizations.reduce((sum, c) => sum + c.cost, 0);
+    const totalCustomizationPrice = selectedCustomization ? selectedCustomization.price : 0;
+    const totalCustomizationCost = selectedCustomization ? selectedCustomization.cost : 0;
 
     let finalSalePrice = (selectedMenuItem.price + totalCustomizationPrice) * values.quantity;
     const transactionsToAdd: Omit<import('/src/types').Transaction, 'id'>[] = [];
@@ -191,8 +191,8 @@ export function EntryForm() {
       saleId: saleId,
     });
 
-    const customizationDescription = selectedCustomizations.length > 0
-      ? ` (${selectedCustomizations.map(c => c.name).join(', ')})`
+    const customizationDescription = selectedCustomization
+      ? ` (${selectedCustomization.name})`
       : '';
 
     transactionsToAdd.push({
@@ -209,7 +209,7 @@ export function EntryForm() {
     try {
       await addTransactions(transactionsToAdd);
       toast({ title: 'Success', description: `Sale of ${selectedMenuItem.name} recorded.` });
-      revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true, customizationIds: [] });
+      revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true, customizationId: undefined });
     } catch (error) {
        toast({
         title: 'Save Failed',
@@ -281,7 +281,7 @@ export function EntryForm() {
                       <FormLabel>Menu Item</FormLabel>
                        <Select onValueChange={(value) => {
                             field.onChange(value);
-                            revenueForm.setValue('customizationIds', []);
+                            revenueForm.setValue('customizationId', undefined);
                        }} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger>
@@ -302,47 +302,33 @@ export function EntryForm() {
                   )} />
                 </div>
                 {selectedMenuItem?.category === 'pizza' && customizations.length > 0 && (
-                    <div className="space-y-2">
-                        <Label>Customizations</Label>
-                        <FormField
-                            control={revenueForm.control}
-                            name="customizationIds"
-                            render={() => (
-                                <FormItem className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                                {customizations.map((item) => (
-                                    <FormField
-                                    key={item.id}
-                                    control={revenueForm.control}
-                                    name="customizationIds"
-                                    render={({ field }) => {
-                                        return (
+                    <FormField
+                        control={revenueForm.control}
+                        name="customizationId"
+                        render={({ field }) => (
+                            <FormItem className="space-y-2">
+                                <Label>Customizations</Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                    {customizations.map((item) => (
                                         <FormItem key={item.id} className="flex flex-row items-center space-x-2 space-y-0">
                                             <FormControl>
-                                            <Checkbox
-                                                checked={field.value?.includes(item.id)}
-                                                onCheckedChange={(checked) => {
-                                                return checked
-                                                    ? field.onChange([...field.value, item.id])
-                                                    : field.onChange(
-                                                        field.value?.filter(
-                                                        (value) => value !== item.id
-                                                        )
-                                                    )
-                                                }}
-                                            />
+                                                <Checkbox
+                                                    checked={field.value === item.id}
+                                                    onCheckedChange={(checked) => {
+                                                        field.onChange(checked ? item.id : undefined)
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormLabel className="font-normal text-sm">
-                                            {item.name} (+${item.price.toFixed(2)})
+                                                {item.name} (+${item.price.toFixed(2)})
                                             </FormLabel>
                                         </FormItem>
-                                        )
-                                    }}
-                                    />
-                                ))}
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+                                    ))}
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 )}
                 <div className="grid gap-4 sm:grid-cols-2">
                    <FormField control={revenueForm.control} name="date" render={({ field }) => (

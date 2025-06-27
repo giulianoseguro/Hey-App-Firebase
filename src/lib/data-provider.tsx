@@ -61,8 +61,8 @@ const defaultMenuItems: Omit<MenuItem, 'id'>[] = [
 ];
 
 const defaultCustomizations: Omit<Customization, 'id'>[] = [
-  { name: 'Borda de Catupiry (Stuffed Crust)', price: 5.99, cost: 1.50 },
-  { name: 'Borda de Cheddar (Stuffed Crust)', price: 5.99, cost: 1.50 },
+  { name: 'Borda de Catupiry', price: 5.99, cost: 1.50 },
+  { name: 'Borda de Nutella', price: 6.99, cost: 2.00 },
 ];
 
 export function DataProvider({ children }: { children: ReactNode }) {
