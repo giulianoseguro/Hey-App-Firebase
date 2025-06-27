@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from 'react'
@@ -46,12 +47,24 @@ export function MenuTable({ data }: MenuTableProps) {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
-  const handleDelete = (id: string) => {
-    deleteMenuItem(id)
-    toast({
-      title: 'Success',
-      description: 'Menu item deleted successfully.',
-    })
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMenuItem(id)
+      toast({
+        title: 'Success',
+        description: 'Menu item deleted successfully.',
+      })
+    } catch (error) {
+      console.error('Failed to delete menu item:', error)
+      toast({
+        title: 'Delete Failed',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleEditFinished = () => {

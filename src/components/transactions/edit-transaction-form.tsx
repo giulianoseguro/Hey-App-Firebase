@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useForm } from 'react-hook-form'
@@ -49,19 +50,30 @@ export function EditTransactionForm({
     },
   })
 
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     const updatedData = {
       ...values,
       type: transaction.type,
       // Revenue category is always 'Sales'. Don't let user change it.
       category: transaction.type === 'revenue' ? 'Sales' : values.category,
     }
-    updateTransaction(transaction.id, updatedData)
-    toast({
-      title: 'Success',
-      description: 'Transaction updated successfully.',
-    })
-    onFinished()
+    try {
+      await updateTransaction(transaction.id, updatedData)
+      toast({
+        title: 'Success',
+        description: 'Transaction updated successfully.',
+      })
+      onFinished()
+    } catch (error) {
+       toast({
+        title: 'Update Failed',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (

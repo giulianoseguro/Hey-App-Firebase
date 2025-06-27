@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useForm } from 'react-hook-form'
@@ -47,21 +48,33 @@ export function EditMenuItemForm({
     },
   })
 
-  const onSubmit = (values: FormValues) => {
-    if (menuItem) {
-      updateMenuItem(menuItem.id, values)
+  const onSubmit = async (values: FormValues) => {
+    try {
+      if (menuItem) {
+        await updateMenuItem(menuItem.id, values)
+        toast({
+          title: 'Success',
+          description: 'Menu item updated successfully.',
+        })
+      } else {
+        await addMenuItem(values)
+        toast({
+          title: 'Success',
+          description: 'Menu item added successfully.',
+        })
+      }
+      onFinished()
+    } catch (error) {
+      console.error('Failed to save menu item:', error)
       toast({
-        title: 'Success',
-        description: 'Menu item updated successfully.',
-      })
-    } else {
-      addMenuItem(values)
-      toast({
-        title: 'Success',
-        description: 'Menu item added successfully.',
+        title: 'Save Failed',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
       })
     }
-    onFinished()
   }
 
   return (

@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from 'react'
@@ -46,12 +47,24 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
   const { toast } = useToast()
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
-  const handleDelete = (id: string) => {
-    deleteTransaction(id)
-    toast({
-      title: 'Success',
-      description: 'Transaction deleted successfully.',
-    })
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTransaction(id)
+      toast({
+        title: 'Success',
+        description: 'Transaction deleted successfully.',
+      })
+    } catch (error) {
+      console.error('Failed to delete transaction:', error)
+      toast({
+        title: 'Delete Failed',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (

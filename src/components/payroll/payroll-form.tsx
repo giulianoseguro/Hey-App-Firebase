@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useForm } from 'react-hook-form'
@@ -52,18 +53,29 @@ export function PayrollForm() {
   const watchedDeductions = form.watch('deductions')
   const netPay = watchedGrossPay - watchedDeductions
 
-  function onSubmit(values: z.infer<typeof payrollSchema>) {
-    addPayrollEntry(values)
-    toast({
-      title: 'Success',
-      description: `Payroll for ${values.employeeName} has been recorded.`,
-    })
-    form.reset({
+  async function onSubmit(values: z.infer<typeof payrollSchema>) {
+    try {
+      await addPayrollEntry(values)
+      toast({
+        title: 'Success',
+        description: `Payroll for ${values.employeeName} has been recorded.`,
+      })
+      form.reset({
         employeeName: '',
         grossPay: 0,
         deductions: 0,
         payDate: today,
       })
+    } catch (error) {
+      toast({
+        title: 'Save Failed',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (

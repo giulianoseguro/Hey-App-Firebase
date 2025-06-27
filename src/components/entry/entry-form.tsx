@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Skeleton } from '../ui/skeleton'
 
 const BC_SALES_TAX_RATE = 0.12
 
@@ -133,7 +135,7 @@ export function EntryForm() {
     }
   }, [debouncedFormState, fetchAIAssistance]);
 
-  const onRevenueSubmit = (values: z.infer<typeof revenueSchema>) => {
+  const onRevenueSubmit = async (values: z.infer<typeof revenueSchema>) => {
     if (!selectedMenuItem) {
       toast({ title: 'Error', description: 'Could not find selected menu item.', variant: 'destructive' })
       return;
@@ -175,22 +177,45 @@ export function EntryForm() {
       quantity: values.quantity
     });
 
-    addTransactions(transactionsToAdd);
-
-    toast({ title: 'Success', description: `Sale of ${selectedMenuItem.name} recorded.` });
-    revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true });
+    try {
+      await addTransactions(transactionsToAdd);
+      toast({ title: 'Success', description: `Sale of ${selectedMenuItem.name} recorded.` });
+      revenueForm.reset({ menuItemId: '', quantity: 1, date: today, includesTax: true });
+    } catch (error) {
+       toast({
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
+      });
+    }
   }
 
-  const onExpenseSubmit = (values: z.infer<typeof expenseSchema>) => {
-    addTransactions([{ type: 'expense', ...values }])
-    toast({ title: 'Success', description: 'Expense added successfully.' })
-    expenseForm.reset({ amount: 0, description: '', category: '', date: today })
+  const onExpenseSubmit = async (values: z.infer<typeof expenseSchema>) => {
+    try {
+      await addTransactions([{ type: 'expense', ...values }]);
+      toast({ title: 'Success', description: 'Expense added successfully.' });
+      expenseForm.reset({ amount: 0, description: '', category: '', date: today });
+    } catch (error) {
+      toast({
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
+      });
+    }
   }
   
-  const onInventorySubmit = (values: z.infer<typeof inventorySchema>) => {
-    addInventoryItem(values)
-    toast({ title: 'Success', description: 'Inventory item and expense added successfully.' })
-    inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' })
+  const onInventorySubmit = async (values: z.infer<typeof inventorySchema>) => {
+    try {
+      await addInventoryItem(values);
+      toast({ title: 'Success', description: 'Inventory item and expense added successfully.' });
+      inventoryForm.reset({ name: '', quantity: 0, unit: '', totalCost: 0, purchaseDate: today, expiryDate: '' });
+    } catch (error) {
+      toast({
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred. Please check the console.',
+        variant: 'destructive',
+      });
+    }
   }
 
   if (!isDataReady) {

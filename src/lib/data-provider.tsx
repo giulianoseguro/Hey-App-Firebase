@@ -1,3 +1,4 @@
+
 'use client'
 
 import { createContext, useContext, type ReactNode, useCallback, useState, useEffect } from 'react'
@@ -8,17 +9,17 @@ import { useToast } from '@/hooks/use-toast'
 
 interface DataContextType {
   transactions: Transaction[]
-  addTransactions: (transactions: Omit<Transaction, 'id'>[]) => void
-  deleteTransaction: (id: string) => void
-  updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => void
+  addTransactions: (transactions: Omit<Transaction, 'id'>[]) => Promise<void>
+  deleteTransaction: (id: string) => Promise<void>
+  updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => Promise<void>
   inventory: InventoryItem[]
-  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void
+  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => Promise<void>
   menuItems: MenuItem[]
-  addMenuItem: (item: Omit<MenuItem, 'id'>) => void
-  updateMenuItem: (id: string, data: Omit<MenuItem, 'id'>) => void
-  deleteMenuItem: (id: string) => void
+  addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>
+  updateMenuItem: (id: string, data: Omit<MenuItem, 'id'>) => Promise<void>
+  deleteMenuItem: (id: string) => Promise<void>
   payroll: PayrollEntry[]
-  addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => void
+  addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => Promise<void>
   isDataReady: boolean
   isDbConnected: boolean
 }
@@ -92,23 +93,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
 
-  const addTransaction = useCallback((transaction: Omit<Transaction, 'id'>) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive'});
-        return;
-    }
-    const newTransactionRef = push(ref(db, 'transactions'));
-    set(newTransactionRef, transaction).catch(error => {
-        console.error("Error adding transaction:", error);
-        toast({ title: 'Database Error', description: 'Failed to add transaction. See console for details.', variant: 'destructive'});
-    });
-  }, [toast]);
-
-  const addTransactions = useCallback((transactionsToAdd: Omit<Transaction, 'id'>[]) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive'});
-        return;
-    }
+  const addTransactions = useCallback(async (transactionsToAdd: Omit<Transaction, 'id'>[]) => {
+    if (!db) throw new Error('Database not connected.');
     const updates: { [key: string]: any } = {};
     transactionsToAdd.forEach(t => {
       const newKey = push(child(ref(db), 'transactions')).key;
@@ -116,43 +102,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updates[`/transactions/${newKey}`] = t;
       }
     });
-    update(ref(db), updates).catch(error => {
-        console.error("Error adding transactions:", error);
-        toast({ title: 'Database Error', description: 'Failed to add transactions. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+    await update(ref(db), updates)
+  }, []);
 
-  const deleteTransaction = useCallback((id: string) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot delete data. Database not connected.', variant: 'destructive' });
-        return;
-    }
-    remove(ref(db, `transactions/${id}`)).catch(error => {
-        console.error("Error deleting transaction:", error);
-        toast({ title: 'Database Error', description: 'Failed to delete transaction. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+  const deleteTransaction = useCallback(async (id: string) => {
+    if (!db) throw new Error('Database not connected.');
+    await remove(ref(db, `transactions/${id}`))
+  }, []);
 
-  const updateTransaction = useCallback((id: string, data: Partial<Omit<Transaction, 'id'>>) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot update data. Database not connected.', variant: 'destructive' });
-        return;
-    }
-    update(ref(db, `transactions/${id}`), data).catch(error => {
-        console.error("Error updating transaction:", error);
-        toast({ title: 'Database Error', description: 'Failed to update transaction. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+  const updateTransaction = useCallback(async (id: string, data: Partial<Omit<Transaction, 'id'>>) => {
+    if (!db) throw new Error('Database not connected.');
+    await update(ref(db, `transactions/${id}`), data)
+  }, []);
 
-  const addInventoryItem = useCallback((item: Omit<InventoryItem, 'id'>) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive' });
-        return;
-    }
+  const addInventoryItem = useCallback(async (item: Omit<InventoryItem, 'id'>) => {
+    if (!db) throw new Error('Database not connected.');
+    
     const newInventoryKey = push(child(ref(db), 'inventory')).key;
     const newTransactionKey = push(child(ref(db), 'transactions')).key;
     
-    if (!newInventoryKey || !newTransactionKey) return;
+    if (!newInventoryKey || !newTransactionKey) {
+      throw new Error("Failed to generate unique keys for new items.");
+    }
 
     const transactionData = {
       type: 'expense' as const,
@@ -166,58 +137,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updates[`/inventory/${newInventoryKey}`] = item;
     updates[`/transactions/${newTransactionKey}`] = transactionData;
 
-    update(ref(db), updates).catch(error => {
-        console.error("Error adding inventory item:", error);
-        toast({ title: 'Database Error', description: 'Failed to add inventory item. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+    await update(ref(db), updates)
+  }, []);
   
-  const addMenuItem = useCallback((item: Omit<MenuItem, 'id'>) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive' });
-        return;
-    }
+  const addMenuItem = useCallback(async (item: Omit<MenuItem, 'id'>) => {
+    if (!db) throw new Error('Database not connected.');
     const newMenuItemRef = push(ref(db, 'menuItems'));
-    set(newMenuItemRef, item).catch(error => {
-        console.error("Error adding menu item:", error);
-        toast({ title: 'Database Error', description: 'Failed to add menu item. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+    await set(newMenuItemRef, item);
+  }, []);
 
-  const updateMenuItem = useCallback((id: string, data: Omit<MenuItem, 'id'>) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot update data. Database not connected.', variant: 'destructive' });
-        return;
-    }
-    set(ref(db, `menuItems/${id}`), data).catch(error => {
-        console.error("Error updating menu item:", error);
-        toast({ title: 'Database Error', description: 'Failed to update menu item. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+  const updateMenuItem = useCallback(async (id: string, data: Omit<MenuItem, 'id'>) => {
+    if (!db) throw new Error('Database not connected.');
+    await set(ref(db, `menuItems/${id}`), data)
+  }, []);
 
-  const deleteMenuItem = useCallback((id: string) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot delete data. Database not connected.', variant: 'destructive' });
-        return;
-    }
-    remove(ref(db, `menuItems/${id}`)).catch(error => {
-        console.error("Error deleting menu item:", error);
-        toast({ title: 'Database Error', description: 'Failed to delete menu item. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+  const deleteMenuItem = useCallback(async (id: string) => {
+    if (!db) throw new Error('Database not connected.');
+    await remove(ref(db, `menuItems/${id}`))
+  }, []);
   
-  const addPayrollEntry = useCallback((entry: Omit<PayrollEntry, 'id' | 'netPay'>) => {
-    if (!db) {
-        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive' });
-        return;
-    }
+  const addPayrollEntry = useCallback(async (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => {
+    if (!db) throw new Error('Database not connected.');
+    
     const netPay = entry.grossPay - entry.deductions;
     const newEntry = { ...entry, netPay };
     
     const newPayrollKey = push(child(ref(db), 'payroll')).key;
     const newTransactionKey = push(child(ref(db), 'transactions')).key;
 
-    if(!newPayrollKey || !newTransactionKey) return;
+    if(!newPayrollKey || !newTransactionKey) {
+        throw new Error("Failed to generate unique keys for new items.");
+    }
 
     const transactionData = {
         type: 'expense' as const,
@@ -231,11 +181,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updates[`/payroll/${newPayrollKey}`] = newEntry;
     updates[`/transactions/${newTransactionKey}`] = transactionData;
 
-    update(ref(db), updates).catch(error => {
-        console.error("Error adding payroll entry:", error);
-        toast({ title: 'Database Error', description: 'Failed to add payroll entry. See console for details.', variant: 'destructive' });
-    });
-  }, [toast]);
+    await update(ref(db), updates);
+  }, []);
 
   const value = {
     transactions,
