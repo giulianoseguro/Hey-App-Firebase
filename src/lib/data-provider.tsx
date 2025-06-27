@@ -256,7 +256,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
   
   const updateInventoryItem = useCallback(async (id: string, data: Omit<InventoryItem, 'id' | 'transactionId'>) => {
-    if (!db) throw new Error('Database not connected.');
+    if (!db) throw new Error("Database not connected.");
     
     const itemToUpdate = inventory.find(i => i.id === id);
     if (!itemToUpdate) throw new Error("Inventory item not found");
@@ -276,10 +276,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const updates: { [key: string]: any } = {};
     updates[`/inventory/${id}`] = inventoryData;
-    updates[`/transactions/${itemToUpdate.transactionId}`] = transactionData;
+    if (itemToUpdate.transactionId) {
+        updates[`/transactions/${itemToUpdate.transactionId}`] = transactionData;
+    }
 
     await update(ref(db), updates);
-}, [inventory]);
+  }, [inventory]);
 
   const deleteInventoryItem = useCallback(async (item: InventoryItem) => {
     if (!db) throw new Error('Database not connected.');
