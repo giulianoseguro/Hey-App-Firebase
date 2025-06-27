@@ -4,11 +4,10 @@ import { createContext, useContext, type ReactNode, useCallback, useState, useEf
 import type { Transaction, InventoryItem, MenuItem, PayrollEntry } from '@/types'
 import { db, isDbInitialized } from './firebase'
 import { ref, onValue, push, set, remove, update, child } from 'firebase/database'
-
+import { useToast } from '@/hooks/use-toast'
 
 interface DataContextType {
   transactions: Transaction[]
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => void
   addTransactions: (transactions: Omit<Transaction, 'id'>[]) => void
   deleteTransaction: (id: string) => void
   updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => void
@@ -27,6 +26,7 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast()
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -42,8 +42,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const isDataReady = !Object.values(loadingStates).some(Boolean);
 
   useEffect(() => {
-    if (!db) {
-      console.warn("Database not configured. Skipping data fetch.");
+    if (!isDbInitialized) {
+      toast({
+        title: 'Database Not Connected',
+        description: 'Your Firebase credentials may be missing or incorrect. Data cannot be loaded or saved.',
+        variant: 'destructive',
+      });
       setLoadingStates({
         transactions: false,
         inventory: false,
@@ -75,23 +79,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setLoadingStates(prev => ({ ...prev, [path]: false }));
       }, (error) => {
         console.error(`Firebase [${path}] read failed:`, error);
+        toast({
+            title: 'Database Read Error',
+            description: `Failed to load ${path}. Check console for details.`,
+            variant: 'destructive'
+        });
         setLoadingStates(prev => ({ ...prev, [path]: false }));
       });
     });
 
-    // The returned function will be called on component unmount
     return () => unsubscribes.forEach(unsubscribe => unsubscribe());
-  }, []);
+  }, [toast]);
 
 
   const addTransaction = useCallback((transaction: Omit<Transaction, 'id'>) => {
-    if (!db) return;
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive'});
+        return;
+    }
     const newTransactionRef = push(ref(db, 'transactions'));
-    set(newTransactionRef, transaction).catch(error => console.error("Error adding transaction:", error));
-  }, []);
+    set(newTransactionRef, transaction).catch(error => {
+        console.error("Error adding transaction:", error);
+        toast({ title: 'Database Error', description: 'Failed to add transaction. See console for details.', variant: 'destructive'});
+    });
+  }, [toast]);
 
   const addTransactions = useCallback((transactionsToAdd: Omit<Transaction, 'id'>[]) => {
-    if (!db) return;
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive'});
+        return;
+    }
     const updates: { [key: string]: any } = {};
     transactionsToAdd.forEach(t => {
       const newKey = push(child(ref(db), 'transactions')).key;
@@ -99,21 +116,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updates[`/transactions/${newKey}`] = t;
       }
     });
-    return update(ref(db), updates).catch(error => console.error("Error adding transactions:", error));
-  }, []);
+    update(ref(db), updates).catch(error => {
+        console.error("Error adding transactions:", error);
+        toast({ title: 'Database Error', description: 'Failed to add transactions. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
 
   const deleteTransaction = useCallback((id: string) => {
-    if (!db) return;
-    remove(ref(db, `transactions/${id}`)).catch(error => console.error("Error deleting transaction:", error));
-  }, []);
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot delete data. Database not connected.', variant: 'destructive' });
+        return;
+    }
+    remove(ref(db, `transactions/${id}`)).catch(error => {
+        console.error("Error deleting transaction:", error);
+        toast({ title: 'Database Error', description: 'Failed to delete transaction. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
 
   const updateTransaction = useCallback((id: string, data: Partial<Omit<Transaction, 'id'>>) => {
-    if (!db) return;
-    update(ref(db, `transactions/${id}`), data).catch(error => console.error("Error updating transaction:", error));
-  }, []);
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot update data. Database not connected.', variant: 'destructive' });
+        return;
+    }
+    update(ref(db, `transactions/${id}`), data).catch(error => {
+        console.error("Error updating transaction:", error);
+        toast({ title: 'Database Error', description: 'Failed to update transaction. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
 
   const addInventoryItem = useCallback((item: Omit<InventoryItem, 'id'>) => {
-    if (!db) return;
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive' });
+        return;
+    }
     const newInventoryKey = push(child(ref(db), 'inventory')).key;
     const newTransactionKey = push(child(ref(db), 'transactions')).key;
     
@@ -131,27 +166,51 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updates[`/inventory/${newInventoryKey}`] = item;
     updates[`/transactions/${newTransactionKey}`] = transactionData;
 
-    return update(ref(db), updates).catch(error => console.error("Error adding inventory item:", error));
-  }, []);
+    update(ref(db), updates).catch(error => {
+        console.error("Error adding inventory item:", error);
+        toast({ title: 'Database Error', description: 'Failed to add inventory item. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
   
   const addMenuItem = useCallback((item: Omit<MenuItem, 'id'>) => {
-    if (!db) return;
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive' });
+        return;
+    }
     const newMenuItemRef = push(ref(db, 'menuItems'));
-    set(newMenuItemRef, item).catch(error => console.error("Error adding menu item:", error));
-  }, []);
+    set(newMenuItemRef, item).catch(error => {
+        console.error("Error adding menu item:", error);
+        toast({ title: 'Database Error', description: 'Failed to add menu item. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
 
   const updateMenuItem = useCallback((id: string, data: Omit<MenuItem, 'id'>) => {
-    if (!db) return;
-    set(ref(db, `menuItems/${id}`), data).catch(error => console.error("Error updating menu item:", error));
-  }, []);
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot update data. Database not connected.', variant: 'destructive' });
+        return;
+    }
+    set(ref(db, `menuItems/${id}`), data).catch(error => {
+        console.error("Error updating menu item:", error);
+        toast({ title: 'Database Error', description: 'Failed to update menu item. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
 
   const deleteMenuItem = useCallback((id: string) => {
-    if (!db) return;
-    remove(ref(db, `menuItems/${id}`)).catch(error => console.error("Error deleting menu item:", error));
-  }, []);
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot delete data. Database not connected.', variant: 'destructive' });
+        return;
+    }
+    remove(ref(db, `menuItems/${id}`)).catch(error => {
+        console.error("Error deleting menu item:", error);
+        toast({ title: 'Database Error', description: 'Failed to delete menu item. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
   
   const addPayrollEntry = useCallback((entry: Omit<PayrollEntry, 'id' | 'netPay'>) => {
-    if (!db) return;
+    if (!db) {
+        toast({ title: 'Database Error', description: 'Cannot save data. Database not connected.', variant: 'destructive' });
+        return;
+    }
     const netPay = entry.grossPay - entry.deductions;
     const newEntry = { ...entry, netPay };
     
@@ -172,12 +231,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updates[`/payroll/${newPayrollKey}`] = newEntry;
     updates[`/transactions/${newTransactionKey}`] = transactionData;
 
-    return update(ref(db), updates).catch(error => console.error("Error adding payroll entry:", error));
-  }, []);
+    update(ref(db), updates).catch(error => {
+        console.error("Error adding payroll entry:", error);
+        toast({ title: 'Database Error', description: 'Failed to add payroll entry. See console for details.', variant: 'destructive' });
+    });
+  }, [toast]);
 
   const value = {
     transactions,
-    addTransaction,
     addTransactions,
     deleteTransaction,
     updateTransaction,
