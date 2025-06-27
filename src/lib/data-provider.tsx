@@ -86,7 +86,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addTransaction = useCallback((transaction: Omit<Transaction, 'id'>) => {
     if (!db) return;
     const newTransactionRef = push(ref(db, 'transactions'));
-    set(newTransactionRef, transaction);
+    set(newTransactionRef, transaction).catch(error => console.error("Error adding transaction:", error));
   }, []);
 
   const addTransactions = useCallback((transactionsToAdd: Omit<Transaction, 'id'>[]) => {
@@ -98,17 +98,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         updates[`/transactions/${newKey}`] = t;
       }
     });
-    return update(ref(db), updates);
+    return update(ref(db), updates).catch(error => console.error("Error adding transactions:", error));
   }, []);
 
   const deleteTransaction = useCallback((id: string) => {
     if (!db) return;
-    remove(ref(db, `transactions/${id}`));
+    remove(ref(db, `transactions/${id}`)).catch(error => console.error("Error deleting transaction:", error));
   }, []);
 
   const updateTransaction = useCallback((id: string, data: Partial<Omit<Transaction, 'id'>>) => {
     if (!db) return;
-    update(ref(db, `transactions/${id}`), data);
+    update(ref(db, `transactions/${id}`), data).catch(error => console.error("Error updating transaction:", error));
   }, []);
 
   const addInventoryItem = useCallback((item: Omit<InventoryItem, 'id'>) => {
@@ -130,23 +130,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updates[`/inventory/${newInventoryKey}`] = item;
     updates[`/transactions/${newTransactionKey}`] = transactionData;
 
-    return update(ref(db), updates);
+    return update(ref(db), updates).catch(error => console.error("Error adding inventory item:", error));
   }, []);
   
   const addMenuItem = useCallback((item: Omit<MenuItem, 'id'>) => {
     if (!db) return;
     const newMenuItemRef = push(ref(db, 'menuItems'));
-    set(newMenuItemRef, item);
+    set(newMenuItemRef, item).catch(error => console.error("Error adding menu item:", error));
   }, []);
 
   const updateMenuItem = useCallback((id: string, data: Omit<MenuItem, 'id'>) => {
     if (!db) return;
-    set(ref(db, `menuItems/${id}`), data);
+    set(ref(db, `menuItems/${id}`), data).catch(error => console.error("Error updating menu item:", error));
   }, []);
 
   const deleteMenuItem = useCallback((id: string) => {
     if (!db) return;
-    remove(ref(db, `menuItems/${id}`));
+    remove(ref(db, `menuItems/${id}`)).catch(error => console.error("Error deleting menu item:", error));
   }, []);
   
   const addPayrollEntry = useCallback((entry: Omit<PayrollEntry, 'id' | 'netPay'>) => {
@@ -171,7 +171,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updates[`/payroll/${newPayrollKey}`] = newEntry;
     updates[`/transactions/${newTransactionKey}`] = transactionData;
 
-    return update(ref(db), updates);
+    return update(ref(db), updates).catch(error => console.error("Error adding payroll entry:", error));
   }, []);
 
   const value = {
