@@ -25,6 +25,7 @@ interface DataContextType {
   updatePayrollEntry: (id: string, data: Omit<PayrollEntry, 'id' | 'netPay'>) => Promise<void>
   deletePayrollEntry: (entry: PayrollEntry) => Promise<void>
   customizations: Customization[]
+  resetAllData: () => Promise<void>
   isDataReady: boolean
   isDbConnected: boolean
 }
@@ -385,6 +386,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await update(ref(db), updates);
   }, []);
 
+  const resetAllData = useCallback(async () => {
+    if (!db) throw new Error('Database not connected.');
+    const updates: { [key: string]: null } = {};
+    updates['/transactions'] = null;
+    updates['/inventory'] = null;
+    updates['/payroll'] = null;
+    updates['/menuItems'] = null;
+    updates['/customizations'] = null;
+    await update(ref(db), updates);
+    // Re-seed the database with default items
+    await seedDatabase();
+  }, [seedDatabase]);
+
+
   const value = {
     transactions,
     addTransactions,
@@ -403,6 +418,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updatePayrollEntry,
     deletePayrollEntry,
     customizations,
+    resetAllData,
     isDataReady,
     isDbConnected: isDbInitialized,
   }

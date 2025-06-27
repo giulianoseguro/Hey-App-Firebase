@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar } from '@/components/ui/sidebar';
-import { LayoutDashboard, FileText, Package, History, BarChart3, BookOpenText, Users } from 'lucide-react';
+import { LayoutDashboard, FileText, Package, History, BarChart3, BookOpenText, Users, Settings } from 'lucide-react';
 
 const navLinks = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -14,6 +14,7 @@ const navLinks = [
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/menu', label: 'Menu Items', icon: BookOpenText },
   { href: '/transactions', label: 'All Transactions', icon: History },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function MainNav() {
