@@ -1,12 +1,12 @@
 'use client';
 import { KPICard } from '@/components/dashboard/kpi-card';
 import { RevenueChart } from '@/components/dashboard/revenue-chart';
-import { ExpensesChart } from '@/components/dashboard/expenses-chart';
 import { useData } from '@/lib/data-provider';
 import { DollarSign, Package, TrendingDown, TrendingUp } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { GeminiChat } from '@/components/dashboard/gemini-chat';
 
 export default function DashboardPage() {
   const { transactions, inventory, isDataReady } = useData();
@@ -33,8 +33,8 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Expenses Breakdown</CardTitle>
-              <CardDescription>A breakdown of where your money is going.</CardDescription>
+              <CardTitle>Ask Gemini</CardTitle>
+              <CardDescription>Ask questions about your business data.</CardDescription>
             </CardHeader>
             <CardContent>
                <Skeleton className="h-[300px]" />
@@ -68,7 +68,7 @@ export default function DashboardPage() {
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <RevenueChart data={transactions} />
-        <ExpensesChart data={transactions} />
+        <GeminiChat />
       </div>
     </div>
   );
