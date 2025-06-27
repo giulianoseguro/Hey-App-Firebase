@@ -18,11 +18,13 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   price: z.coerce.number().positive('Price must be a positive number'),
   cost: z.coerce.number().min(0, 'Cost must be a positive number'),
+  category: z.enum(['pizza', 'beverage', 'other'])
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -45,6 +47,7 @@ export function EditMenuItemForm({
       name: '',
       price: 0,
       cost: 0,
+      category: 'other',
     },
   })
 
@@ -93,7 +96,7 @@ export function EditMenuItemForm({
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="price"
@@ -121,6 +124,28 @@ export function EditMenuItemForm({
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="pizza">Pizza</SelectItem>
+                  <SelectItem value="beverage">Beverage</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="ghost" onClick={onFinished}>
             Cancel

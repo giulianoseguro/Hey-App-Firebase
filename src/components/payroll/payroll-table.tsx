@@ -36,6 +36,9 @@ import {
 import { useData } from '@/lib/data-provider'
 import { useToast } from '@/hooks/use-toast'
 import { EditPayrollEntryForm } from './edit-payroll-entry-form'
+import { Card, CardContent, CardTitle } from '../ui/card'
+import { Separator } from '../ui/separator'
+import { cn } from '@/lib/utils'
 
 interface PayrollTableProps {
   data: PayrollEntry[]
@@ -76,7 +79,8 @@ export function PayrollTable({ data }: PayrollTableProps) {
 
   return (
     <>
-      <div className="rounded-lg border">
+      {/* Desktop View */}
+      <div className="hidden rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -135,16 +139,94 @@ export function PayrollTable({ data }: PayrollTableProps) {
               </TableRow>
             )}
           </TableBody>
-          <TableFooter>
-              <TableRow>
-                  <TableCell colSpan={2} className="font-bold text-right">Totals</TableCell>
-                  <TableCell className="text-right font-bold">${totals.grossPay.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-bold text-destructive">${totals.deductions.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-bold">${totals.netPay.toFixed(2)}</TableCell>
-                  <TableCell />
-              </TableRow>
-          </TableFooter>
+          {sortedData.length > 0 && (
+            <TableFooter>
+                <TableRow>
+                    <TableCell colSpan={2} className="font-bold text-right">Totals</TableCell>
+                    <TableCell className="text-right font-bold">${totals.grossPay.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-bold text-destructive">${totals.deductions.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-bold">${totals.netPay.toFixed(2)}</TableCell>
+                    <TableCell />
+                </TableRow>
+            </TableFooter>
+          )}
         </Table>
+      </div>
+
+       {/* Mobile View */}
+      <div className="grid gap-4 md:hidden">
+        {sortedData.length > 0 ? (
+          sortedData.map((entry) => (
+            <Card key={entry.id} className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-medium">{entry.employeeName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {format(parseISO(entry.payDate), 'MMM d, yyyy')}
+                  </div>
+                </div>
+                <div className="flex items-center -mr-2">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingEntry(entry)}>
+                    <Edit className="h-4 w-4" />
+                    <span className="sr-only">Edit Entry</span>
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete Entry</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the payroll entry and its associated transaction.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(entry)}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+              <Separator className="my-2" />
+              <div className="text-sm space-y-1 text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Gross Pay:</span>
+                  <span className="font-medium text-foreground">${entry.grossPay.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Deductions:</span>
+                  <span className="font-medium text-destructive">${entry.deductions.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-semibold border-t pt-1 mt-1">
+                  <span className="text-foreground">Net Pay:</span>
+                  <span className="text-foreground">${entry.netPay.toFixed(2)}</span>
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <Card className="flex h-24 items-center justify-center">
+            <p className="text-muted-foreground">No payroll entries yet.</p>
+          </Card>
+        )}
+        {sortedData.length > 0 && (
+           <Card className="p-4 bg-muted/50">
+            <CardTitle className="text-lg mb-2">Total Payroll</CardTitle>
+            <CardContent className="p-0 space-y-2 text-sm">
+                <div className="flex justify-between font-medium"><span>Total Gross Pay</span><span className="text-foreground">${totals.grossPay.toFixed(2)}</span></div>
+                <div className="flex justify-between font-medium"><span>Total Deductions</span><span className="text-destructive">${totals.deductions.toFixed(2)}</span></div>
+                <Separator />
+                <div className="flex justify-between font-bold text-base"><span>Total Net Pay</span><span className={cn('text-foreground')}>${totals.netPay.toFixed(2)}</span></div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Dialog open={!!editingEntry} onOpenChange={(isOpen) => !isOpen && setEditingEntry(null)}>

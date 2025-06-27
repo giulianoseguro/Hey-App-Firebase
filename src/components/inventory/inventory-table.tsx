@@ -37,6 +37,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { EditInventoryItemForm } from './edit-inventory-item-form'
+import { Card } from '../ui/card'
+import { Separator } from '../ui/separator'
 
 
 interface InventoryTableProps {
@@ -82,7 +84,8 @@ export function InventoryTable({ data }: InventoryTableProps) {
 
   return (
     <>
-      <div className="rounded-lg border">
+      {/* Desktop View */}
+      <div className="hidden rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -149,6 +152,75 @@ export function InventoryTable({ data }: InventoryTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile View */}
+      <div className="grid gap-4 md:hidden">
+        {sortedData.length > 0 ? (
+          sortedData.map((item) => {
+            const status = getStatus(item)
+            return (
+              <Card key={item.id} className={cn('p-4', status?.variant === 'destructive' && 'bg-destructive/10 border-destructive/50')}>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-muted-foreground">{item.quantity} {item.unit}</div>
+                    </div>
+                    <div className="flex items-center">
+                      <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8" onClick={() => setEditingItem(item)}>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit Item</span>
+                      </Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete Item</span>
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will permanently delete the inventory item and its associated expense transaction.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(item)}>
+                                      Delete
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                </div>
+                <Separator className="my-2" />
+                <div className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">Purchased:</span>
+                        <span>{format(parseISO(item.purchaseDate), 'MMM d, yyyy')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">Expires:</span>
+                        <span>{format(parseISO(item.expiryDate), 'MMM d, yyyy')}</span>
+                    </div>
+                     {status && (
+                        <div className="flex justify-between items-center pt-1">
+                            <span className="text-muted-foreground">Status:</span>
+                            <Badge variant={status.variant}>{status.text}</Badge>
+                        </div>
+                     )}
+                </div>
+              </Card>
+            )
+          })
+        ) : (
+           <Card className="flex h-24 items-center justify-center">
+            <p className="text-muted-foreground">No items in stock.</p>
+          </Card>
+        )}
+      </div>
+
       <Dialog open={!!editingItem} onOpenChange={(isOpen) => !isOpen && setEditingItem(null)}>
         <DialogContent>
             <DialogHeader>

@@ -36,6 +36,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { EditMenuItemForm } from './edit-menu-item-form'
+import { Card } from '../ui/card'
+import { Separator } from '../ui/separator'
 
 interface MenuTableProps {
   data: MenuItem[]
@@ -93,7 +95,9 @@ export function MenuTable({ data }: MenuTableProps) {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="rounded-lg border">
+
+      {/* Desktop View */}
+      <div className="hidden rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -168,6 +172,67 @@ export function MenuTable({ data }: MenuTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile View */}
+       <div className="grid gap-4 md:hidden">
+        {data.length > 0 ? (
+          data.map((item) => (
+            <Card key={item.id} className="p-4">
+              <div className="flex justify-between items-start">
+                  <div className="font-medium">{item.name}</div>
+                  <div className="flex items-center -mr-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingItem(item)}>
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit Item</span>
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete Item</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete this menu item.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(item.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                  </div>
+              </div>
+              <Separator className="my-2" />
+              <div className="text-sm space-y-1 text-muted-foreground">
+                  <div className="flex justify-between">
+                      <span>Price:</span>
+                      <span className="font-medium text-primary">${item.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                      <span>Cost:</span>
+                      <span className="font-medium text-destructive">${item.cost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold mt-1 pt-1 border-t">
+                      <span className="text-foreground">Profit:</span>
+                      <span className="text-foreground">${(item.price - item.cost).toFixed(2)}</span>
+                  </div>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <Card className="flex h-24 items-center justify-center">
+            <p className="text-muted-foreground">No menu items found.</p>
+          </Card>
+        )}
+      </div>
+
 
       <Dialog
         open={!!editingItem}

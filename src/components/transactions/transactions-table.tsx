@@ -43,6 +43,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { EditTransactionForm } from './edit-transaction-form'
+import { Card } from '../ui/card'
 
 interface TransactionsTableProps {
   data: Transaction[]
@@ -107,7 +108,8 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
   return (
     <>
       <TooltipProvider>
-        <div className="rounded-lg border">
+        {/* Desktop View */}
+        <div className="hidden rounded-lg border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -206,6 +208,84 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="grid gap-4 md:hidden">
+          {data.length > 0 ? (
+            data.map((transaction) => {
+              const isEditable = !MANAGED_CATEGORIES.includes(transaction.category) && transaction.type !== 'revenue';
+              return (
+                <Card key={transaction.id} className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-2">
+                      <div className="font-medium">{transaction.description}</div>
+                      <div className="text-sm text-muted-foreground capitalize">{transaction.category}</div>
+                    </div>
+                    <div className="flex items-center -mr-2">
+                       <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={!isEditable ? 0 : -1}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={!isEditable}
+                                onClick={() => isEditable && setEditingTransaction(transaction)}
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit Transaction</span>
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          {!isEditable && <TooltipContent><p>{getTooltipContent(transaction)}</p></TooltipContent>}
+                        </Tooltip>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Delete Transaction</span>
+                              </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {getDeletionAlertDescription(transaction)}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(transaction.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                  </div>
+                   <div className="flex justify-between items-end mt-2 pt-2 border-t">
+                    <div className="text-sm text-muted-foreground">{format(parseISO(transaction.date), 'MMM d, yyyy')}</div>
+                    <div className={cn(
+                      'font-semibold',
+                      transaction.type === 'revenue'
+                        ? 'text-primary'
+                        : 'text-destructive'
+                    )}>
+                      {transaction.type === 'revenue' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                    </div>
+                  </div>
+                </Card>
+              )
+            })
+          ) : (
+            <Card className="flex h-24 items-center justify-center">
+                <p className="text-muted-foreground">No transactions found.</p>
+            </Card>
+          )}
         </div>
       </TooltipProvider>
 
