@@ -14,9 +14,9 @@ export default function DashboardPage() {
 
   if (!isDataReady) {
     return (
-      <div className="flex animate-pulse flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <PageHeader title="Dashboard" description="An overview of your pizzeria's finances." />
-        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:gap-6">
+        <div className="grid animate-pulse grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Gemini Skeleton */}
           <div className="order-1 lg:order-3">
             <Card>
@@ -71,7 +71,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <PageHeader title="Dashboard" description="An overview of your pizzeria's finances." />
       
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Gemini Chat: order-1 on mobile, part of 2-col grid on desktop */}
         <div className="order-1 lg:order-3">
           <GeminiChat />
