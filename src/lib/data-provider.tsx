@@ -2,20 +2,8 @@
 
 import { createContext, useContext, type ReactNode, useCallback, useState, useEffect } from 'react'
 import type { Transaction, InventoryItem, MenuItem, PayrollEntry } from '@/types'
-
-// A helper function to get data from local storage safely.
-function getInitialState<T>(key: string, defaultValue: T): T {
-  if (typeof window === 'undefined') {
-    return defaultValue;
-  }
-  try {
-    const item = window.localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
-  } catch (error) {
-    console.warn(`Error reading localStorage key “${key}”:`, error);
-    return defaultValue;
-  }
-}
+import { db } from './firebase'
+import { ref, onValue, push, set, remove, update, child } from 'firebase/database'
 
 
 interface DataContextType {
@@ -23,7 +11,7 @@ interface DataContextType {
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void
   addTransactions: (transactions: Omit<Transaction, 'id'>[]) => void
   deleteTransaction: (id: string) => void
-  updateTransaction: (id: string, data: Omit<Transaction, 'id'>) => void
+  updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => void
   inventory: InventoryItem[]
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void
   menuItems: MenuItem[]
@@ -33,8 +21,6 @@ interface DataContextType {
   payroll: PayrollEntry[]
   addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => void
   isDataReady: boolean
-  exportAllData: () => void
-  importAllData: (jsonData: string) => void
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -44,138 +30,149 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [payroll, setPayroll] = useState<PayrollEntry[]>([]);
-  const [isDataReady, setIsDataReady] = useState(false);
+  
+  const [loadingStates, setLoadingStates] = useState({
+    transactions: true,
+    inventory: true,
+    menuItems: true,
+    payroll: true,
+  });
+
+  const isDataReady = !Object.values(loadingStates).some(Boolean);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        setTransactions(getInitialState('transactions', []));
-        setInventory(getInitialState('inventory', []));
-        setMenuItems(getInitialState('menuItems', []));
-        setPayroll(getInitialState('payroll', []));
-      } finally {
-        setIsDataReady(true);
-      }
+    if (!db) {
+      console.warn("Database not configured. Skipping data fetch.");
+      setLoadingStates({
+        transactions: false,
+        inventory: false,
+        menuItems: false,
+        payroll: false,
+      });
+      return;
     }
+
+    const dataPaths = ['transactions', 'inventory', 'menuItems', 'payroll'];
+    const setters = {
+      transactions: setTransactions,
+      inventory: setInventory,
+      menuItems: setMenuItems,
+      payroll: setPayroll,
+    };
+
+    const unsubscribes = dataPaths.map(path => {
+      const dbRef = ref(db, `${path}/`);
+      return onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        const loadedItems: any[] = [];
+        if (data) {
+          for (const id in data) {
+            loadedItems.push({ id, ...data[id] });
+          }
+        }
+        (setters as any)[path](loadedItems);
+        setLoadingStates(prev => ({ ...prev, [path]: false }));
+      }, (error) => {
+        console.error(`Firebase [${path}] read failed:`, error);
+        setLoadingStates(prev => ({ ...prev, [path]: false }));
+      });
+    });
+
+    // The returned function will be called on component unmount
+    return () => unsubscribes.forEach(unsubscribe => unsubscribe());
   }, []);
 
-  useEffect(() => {
-    if (isDataReady) {
-      window.localStorage.setItem('transactions', JSON.stringify(transactions));
-    }
-  }, [transactions, isDataReady]);
-
-  useEffect(() => {
-    if (isDataReady) {
-      window.localStorage.setItem('inventory', JSON.stringify(inventory));
-    }
-  }, [inventory, isDataReady]);
-
-  useEffect(() => {
-    if (isDataReady) {
-      window.localStorage.setItem('menuItems', JSON.stringify(menuItems));
-    }
-  }, [menuItems, isDataReady]);
-  
-  useEffect(() => {
-    if (isDataReady) {
-      window.localStorage.setItem('payroll', JSON.stringify(payroll));
-    }
-  }, [payroll, isDataReady]);
 
   const addTransaction = useCallback((transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction = { ...transaction, id: crypto.randomUUID() }
-    setTransactions((prev) => [newTransaction, ...prev])
+    if (!db) return;
+    const newTransactionRef = push(ref(db, 'transactions'));
+    set(newTransactionRef, transaction);
   }, []);
 
-  const addTransactions = useCallback((transactions: Omit<Transaction, 'id'>[]) => {
-    const newTransactions = transactions.map(t => ({...t, id: crypto.randomUUID()}));
-    setTransactions(prev => [...newTransactions, ...prev]);
+  const addTransactions = useCallback((transactionsToAdd: Omit<Transaction, 'id'>[]) => {
+    if (!db) return;
+    const updates: { [key: string]: any } = {};
+    transactionsToAdd.forEach(t => {
+      const newKey = push(child(ref(db), 'transactions')).key;
+      if (newKey) {
+        updates[`/transactions/${newKey}`] = t;
+      }
+    });
+    return update(ref(db), updates);
   }, []);
 
   const deleteTransaction = useCallback((id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id))
+    if (!db) return;
+    remove(ref(db, `transactions/${id}`));
   }, []);
 
-  const updateTransaction = useCallback((id: string, data: Omit<Transaction, 'id'>) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { id, ...data } : t))
-    )
+  const updateTransaction = useCallback((id: string, data: Partial<Omit<Transaction, 'id'>>) => {
+    if (!db) return;
+    update(ref(db, `transactions/${id}`), data);
   }, []);
 
   const addInventoryItem = useCallback((item: Omit<InventoryItem, 'id'>) => {
-    const newItem = { ...item, id: crypto.randomUUID() }
-    setInventory((prev) => [newItem, ...prev])
-    addTransaction({
-      type: 'expense',
+    if (!db) return;
+    const newInventoryKey = push(child(ref(db), 'inventory')).key;
+    const newTransactionKey = push(child(ref(db), 'transactions')).key;
+    
+    if (!newInventoryKey || !newTransactionKey) return;
+
+    const transactionData = {
+      type: 'expense' as const,
       date: item.purchaseDate,
       amount: item.totalCost,
       description: `Purchase: ${item.quantity} ${item.unit} of ${item.name}`,
       category: 'Inventory Purchase',
-    })
-  }, [addTransaction]);
+    };
+
+    const updates: { [key:string]: any } = {};
+    updates[`/inventory/${newInventoryKey}`] = item;
+    updates[`/transactions/${newTransactionKey}`] = transactionData;
+
+    return update(ref(db), updates);
+  }, []);
   
   const addMenuItem = useCallback((item: Omit<MenuItem, 'id'>) => {
-    const newItem = { ...item, id: crypto.randomUUID() };
-    setMenuItems(prev => [newItem, ...prev]);
+    if (!db) return;
+    const newMenuItemRef = push(ref(db, 'menuItems'));
+    set(newMenuItemRef, item);
   }, []);
 
   const updateMenuItem = useCallback((id: string, data: Omit<MenuItem, 'id'>) => {
-    setMenuItems(prev => prev.map(item => item.id === id ? { id, ...data } : item));
+    if (!db) return;
+    set(ref(db, `menuItems/${id}`), data);
   }, []);
 
   const deleteMenuItem = useCallback((id: string) => {
-    setMenuItems(prev => prev.filter(item => item.id !== id));
+    if (!db) return;
+    remove(ref(db, `menuItems/${id}`));
   }, []);
   
   const addPayrollEntry = useCallback((entry: Omit<PayrollEntry, 'id' | 'netPay'>) => {
+    if (!db) return;
     const netPay = entry.grossPay - entry.deductions;
-    const newEntry = { ...entry, netPay, id: crypto.randomUUID() };
-    setPayroll(prev => [newEntry, ...prev]);
+    const newEntry = { ...entry, netPay };
+    
+    const newPayrollKey = push(child(ref(db), 'payroll')).key;
+    const newTransactionKey = push(child(ref(db), 'transactions')).key;
 
-    addTransaction({
-        type: 'expense',
+    if(!newPayrollKey || !newTransactionKey) return;
+
+    const transactionData = {
+        type: 'expense' as const,
         date: entry.payDate,
         amount: entry.grossPay,
         description: `Payroll for ${entry.employeeName}`,
         category: 'Payroll',
-    });
-  }, [addTransaction]);
-
-  const exportAllData = useCallback(() => {
-    const data = {
-        transactions,
-        inventory,
-        menuItems,
-        payroll,
     };
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-        JSON.stringify(data, null, 2)
-    )}`;
-    const link = document.createElement("a");
-    link.href = jsonString;
-    link.download = `pizza-profit-pilot-data-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const updates: { [key: string]: any } = {};
+    updates[`/payroll/${newPayrollKey}`] = newEntry;
+    updates[`/transactions/${newTransactionKey}`] = transactionData;
 
-    link.click();
-  }, [transactions, inventory, menuItems, payroll]);
-
-  const importAllData = useCallback((jsonData: string) => {
-      try {
-        const data = JSON.parse(jsonData);
-        if (data.transactions && data.inventory && data.menuItems && data.payroll) {
-            setTransactions(data.transactions);
-            setInventory(data.inventory);
-            setMenuItems(data.menuItems);
-            setPayroll(data.payroll);
-        } else {
-            throw new Error("Invalid data format.");
-        }
-    } catch (error) {
-        console.error("Failed to import data:", error);
-        throw error;
-    }
+    return update(ref(db), updates);
   }, []);
-
 
   const value = {
     transactions,
@@ -192,8 +189,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     payroll,
     addPayrollEntry,
     isDataReady,
-    exportAllData,
-    importAllData,
   }
 
   return (
