@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import type { Transaction } from '@/types'
 import { format, parseISO } from 'date-fns'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
 
 import { useData } from '@/lib/data-provider'
 import { cn } from '@/lib/utils'
@@ -47,11 +47,13 @@ import { Card } from '../ui/card'
 
 interface TransactionsTableProps {
   data: Transaction[]
+  requestSort: (key: keyof Transaction) => void
+  sortConfig: { key: keyof Transaction; direction: 'ascending' | 'descending' } | null
 }
 
 const MANAGED_CATEGORIES = ['Payroll', 'Cost of Goods Sold', 'Taxes', 'Inventory Purchase'];
 
-export function TransactionsTable({ data }: TransactionsTableProps) {
+export function TransactionsTable({ data, requestSort, sortConfig }: TransactionsTableProps) {
   const { deleteTransaction } = useData()
   const { toast } = useToast()
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
@@ -105,6 +107,16 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
     return 'This action cannot be undone. This will permanently delete this transaction.'
   }
 
+  const getSortIndicator = (key: keyof Transaction) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return null
+    }
+    if (sortConfig.direction === 'ascending') {
+      return <ArrowUp className="ml-2 h-4 w-4" />
+    }
+    return <ArrowDown className="ml-2 h-4 w-4" />
+  }
+
   return (
     <>
       <TooltipProvider>
@@ -113,11 +125,46 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <TableHead
+                  className="w-[120px] cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('date')}
+                >
+                  <div className="flex items-center">
+                    Date {getSortIndicator('date')}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('description')}
+                >
+                  <div className="flex items-center">
+                    Description {getSortIndicator('description')}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('type')}
+                >
+                  <div className="flex items-center">
+                    Type {getSortIndicator('type')}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort('category')}
+                >
+                  <div className="flex items-center">
+                    Category {getSortIndicator('category')}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer text-right hover:bg-muted/50"
+                  onClick={() => requestSort('amount')}
+                >
+                  <div className="flex items-center justify-end">
+                    Amount {getSortIndicator('amount')}
+                  </div>
+                </TableHead>
                 <TableHead className="w-[100px] text-right">
                   Actions
                 </TableHead>

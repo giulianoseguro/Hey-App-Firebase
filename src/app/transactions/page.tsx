@@ -15,8 +15,9 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { PageHeader } from '@/components/page-header'
 import { TransactionsTable } from '@/components/transactions/transactions-table'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { parseISO } from 'date-fns'
+import type { Transaction } from '@/types'
 
 export default function TransactionsPage() {
   const { transactions, isDataReady } = useData()
@@ -29,6 +30,11 @@ export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Transaction
+    direction: 'ascending' | 'descending'
+  }>({ key: 'date', direction: 'descending' })
+
   const handleFilterChange = (value: string) => {
     const params = new URLSearchParams(searchParams.toString())
     if (value === 'all') {
@@ -39,15 +45,47 @@ export default function TransactionsPage() {
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  const sortedTransactions = [...transactions].sort(
-    (a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()
-  )
+  const requestSort = (key: keyof Transaction) => {
+    let direction: 'ascending' | 'descending' = 'ascending'
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === 'ascending'
+    ) {
+      direction = 'descending'
+    }
+    setSortConfig({ key, direction })
+  }
 
-  const filteredTransactions = sortedTransactions
-    .filter((t) => filterType === 'all' || t.type === filterType)
-    .filter((t) =>
-      t.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-    )
+  const filteredAndSortedTransactions = useMemo(() => {
+    let filteredItems = transactions
+      .filter((t) => filterType === 'all' || t.type === filterType)
+      .filter((t) =>
+        t.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+      )
+
+    if (sortConfig) {
+      filteredItems.sort((a, b) => {
+        const aValue = a[sortConfig.key]
+        const bValue = b[sortConfig.key]
+
+        let comparison = 0
+        if (sortConfig.key === 'date') {
+          comparison =
+            parseISO(aValue as string).getTime() -
+            parseISO(bValue as string).getTime()
+        } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+          comparison = aValue - bValue
+        } else {
+          comparison = String(aValue).localeCompare(String(bValue))
+        }
+
+        return sortConfig.direction === 'ascending' ? comparison : -comparison
+      })
+    }
+
+    return filteredItems
+  }, [transactions, filterType, debouncedSearchQuery, sortConfig])
 
   return (
     <div className="flex flex-col gap-6">
@@ -75,7 +113,11 @@ export default function TransactionsPage() {
               </SelectContent>
             </Select>
           </div>
-          <TransactionsTable data={filteredTransactions} />
+          <TransactionsTable
+            data={filteredAndSortedTransactions}
+            requestSort={requestSort}
+            sortConfig={sortConfig}
+          />
         </>
       ) : (
         <div className="space-y-4">
