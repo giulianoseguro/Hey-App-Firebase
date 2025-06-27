@@ -1,6 +1,6 @@
 'use client';
 
-import { DataProvider } from '@/lib/data-provider';
+import dynamic from 'next/dynamic';
 import {
   SidebarProvider,
   Sidebar,
@@ -14,6 +14,11 @@ import { MainNav } from '@/components/main-nav';
 import { Button } from './ui/button';
 import { PlusCircle, Pizza } from 'lucide-react';
 import Link from 'next/link';
+
+const DataProvider = dynamic(
+  () => import('@/lib/data-provider').then((mod) => mod.DataProvider),
+  { ssr: false }
+);
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
