@@ -4,7 +4,7 @@
 import { createContext, useContext, type ReactNode, useCallback, useState, useEffect } from 'react'
 import type { Transaction, InventoryItem, MenuItem, PayrollEntry } from '@/types'
 import { db, isDbInitialized } from './firebase'
-import { ref, onValue, push, set, remove, update, child } from 'firebase/database'
+import { ref, onValue, push, set, remove, update, child, get } from 'firebase/database'
 import { useToast } from '@/hooks/use-toast'
 
 interface DataContextType {
@@ -19,7 +19,9 @@ interface DataContextType {
   updateMenuItem: (id: string, data: Omit<MenuItem, 'id'>) => Promise<void>
   deleteMenuItem: (id: string) => Promise<void>
   payroll: PayrollEntry[]
-  addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => Promise<void>
+  addPayrollEntry: (entry: Omit<PayrollEntry, 'id' | 'netPay' | 'transactionId'>) => Promise<void>
+  updatePayrollEntry: (id: string, data: Omit<PayrollEntry, 'id' | 'netPay'>) => Promise<void>
+  deletePayrollEntry: (entry: PayrollEntry) => Promise<void>
   isDataReady: boolean
   isDbConnected: boolean
 }
@@ -107,8 +109,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deleteTransaction = useCallback(async (id: string) => {
     if (!db) throw new Error('Database not connected.');
-    await remove(ref(db, `transactions/${id}`))
-  }, []);
+
+    const transactionToDelete = transactions.find(t => t.id === id);
+
+    if (!transactionToDelete) {
+      throw new Error('Transaction not found to delete.');
+    }
+    
+    const updates: { [key: string]: null } = {};
+    updates[`/transactions/${id}`] = null;
+
+    // If part of a sale, delete all related transactions
+    if (transactionToDelete.saleId) {
+      transactions.forEach(t => {
+        if (t.saleId === transactionToDelete.saleId) {
+          updates[`/transactions/${t.id}`] = null;
+        }
+      });
+    }
+    
+    await update(ref(db), updates)
+  }, [transactions]);
 
   const updateTransaction = useCallback(async (id: string, data: Partial<Omit<Transaction, 'id'>>) => {
     if (!db) throw new Error('Database not connected.');
@@ -156,11 +177,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await remove(ref(db, `menuItems/${id}`))
   }, []);
   
-  const addPayrollEntry = useCallback(async (entry: Omit<PayrollEntry, 'id' | 'netPay'>) => {
+  const addPayrollEntry = useCallback(async (entry: Omit<PayrollEntry, 'id' | 'netPay' | 'transactionId'>) => {
     if (!db) throw new Error('Database not connected.');
     
     const netPay = entry.grossPay - entry.deductions;
-    const newEntry = { ...entry, netPay };
     
     const newPayrollKey = push(child(ref(db), 'payroll')).key;
     const newTransactionKey = push(child(ref(db), 'transactions')).key;
@@ -168,6 +188,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if(!newPayrollKey || !newTransactionKey) {
         throw new Error("Failed to generate unique keys for new items.");
     }
+
+    const newEntry: Omit<PayrollEntry, 'id'> = { ...entry, netPay, transactionId: newTransactionKey };
 
     const transactionData = {
         type: 'expense' as const,
@@ -184,6 +206,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await update(ref(db), updates);
   }, []);
 
+  const updatePayrollEntry = useCallback(async (id: string, data: Omit<PayrollEntry, 'id' | 'netPay'>) => {
+    if (!db) throw new Error('Database not connected.');
+    
+    const netPay = data.grossPay - data.deductions;
+    const updatedEntry: Omit<PayrollEntry, 'id'> = { ...data, netPay };
+
+    const transactionData = {
+        type: 'expense' as const,
+        date: data.payDate,
+        amount: data.grossPay,
+        description: `Payroll for ${data.employeeName}`,
+        category: 'Payroll',
+    };
+    
+    const updates: { [key: string]: any } = {};
+    updates[`/payroll/${id}`] = updatedEntry;
+    updates[`/transactions/${data.transactionId}`] = transactionData;
+
+    await update(ref(db), updates);
+  }, []);
+
+  const deletePayrollEntry = useCallback(async (entry: PayrollEntry) => {
+    if (!db) throw new Error('Database not connected.');
+    const updates: { [key: string]: null } = {};
+    updates[`/payroll/${entry.id}`] = null;
+    if (entry.transactionId) {
+      updates[`/transactions/${entry.transactionId}`] = null;
+    }
+    await update(ref(db), updates);
+  }, []);
+
   const value = {
     transactions,
     addTransactions,
@@ -197,6 +250,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     deleteMenuItem,
     payroll,
     addPayrollEntry,
+    updatePayrollEntry,
+    deletePayrollEntry,
     isDataReady,
     isDbConnected: isDbInitialized,
   }

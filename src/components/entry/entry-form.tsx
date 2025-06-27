@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useData } from '@/lib/data-provider'
@@ -37,6 +37,8 @@ import {
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '../ui/skeleton'
+import { db } from '@/lib/firebase'
+import { ref, push, child } from 'firebase/database'
 
 const BC_SALES_TAX_RATE = 0.12
 
@@ -140,9 +142,19 @@ export function EntryForm() {
       toast({ title: 'Error', description: 'Could not find selected menu item.', variant: 'destructive' })
       return;
     }
+    if (!db) {
+      toast({ title: 'Error', description: 'Database not connected.', variant: 'destructive' })
+      return
+    }
+
+    const saleId = push(child(ref(db), 'sales')).key;
+    if (!saleId) {
+      toast({ title: 'Error', description: 'Could not generate a unique sale ID.', variant: 'destructive' })
+      return;
+    }
 
     let revenueAmount = selectedMenuItem.price * values.quantity;
-    const transactionsToAdd = [];
+    const transactionsToAdd: Omit<import('/src/types').Transaction, 'id'>[] = [];
     
     if (values.includesTax) {
       const preTaxRevenue = revenueAmount / (1 + BC_SALES_TAX_RATE);
@@ -155,6 +167,7 @@ export function EntryForm() {
         amount: taxAmount,
         description: `Sales Tax for ${values.quantity} x ${selectedMenuItem.name}`,
         category: 'Taxes',
+        saleId: saleId,
       });
     }
 
@@ -165,6 +178,7 @@ export function EntryForm() {
       amount: cogsAmount,
       description: `COGS for ${values.quantity} x ${selectedMenuItem.name}`,
       category: 'Cost of Goods Sold',
+      saleId: saleId,
     });
 
     transactionsToAdd.push({
@@ -174,7 +188,8 @@ export function EntryForm() {
       description: `Sale: ${values.quantity} x ${selectedMenuItem.name}`,
       category: 'Sales',
       menuItemId: values.menuItemId,
-      quantity: values.quantity
+      quantity: values.quantity,
+      saleId: saleId,
     });
 
     try {
@@ -250,7 +265,7 @@ export function EntryForm() {
                   <FormField control={revenueForm.control} name="menuItemId" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Menu Item</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger>
                         </FormControl>

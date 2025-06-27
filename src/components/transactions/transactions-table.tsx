@@ -36,11 +36,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { EditTransactionForm } from './edit-transaction-form'
 
 interface TransactionsTableProps {
   data: Transaction[]
 }
+
+const MANAGED_CATEGORIES = ['Payroll', 'Cost of Goods Sold', 'Taxes', 'Inventory Purchase'];
 
 export function TransactionsTable({ data }: TransactionsTableProps) {
   const { deleteTransaction } = useData()
@@ -52,7 +60,7 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
       await deleteTransaction(id)
       toast({
         title: 'Success',
-        description: 'Transaction deleted successfully.',
+        description: 'Transaction and any linked entries have been deleted.',
       })
     } catch (error) {
       console.error('Failed to delete transaction:', error)
@@ -67,96 +75,132 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
     }
   }
 
+  const getTooltipContent = (category: string) => {
+    switch(category) {
+        case 'Payroll':
+            return 'This is a payroll expense. Please manage it on the Payroll page.';
+        case 'Cost of Goods Sold':
+        case 'Taxes':
+            return "This is part of a sale. To modify it, delete the original revenue transaction.";
+        case 'Inventory Purchase':
+            return "This was created from an inventory entry. Manage it from the Inventory page.";
+        default:
+            return "This transaction cannot be edited directly.";
+    }
+  }
+
   return (
     <>
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="w-[100px] text-right">
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.length > 0 ? (
-              data.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell className="w-[120px]">
-                    {format(parseISO(transaction.date), 'MMM d, yyyy')}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {transaction.description}
-                  </TableCell>
-                  <TableCell className="capitalize text-muted-foreground">
-                    {transaction.type}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {transaction.category}
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'text-right font-semibold',
-                      transaction.type === 'revenue'
-                        ? 'text-primary'
-                        : 'text-destructive'
-                    )}
-                  >
-                    {transaction.type === 'revenue' ? '+' : '-'}$
-                    {transaction.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setEditingTransaction(transaction)}
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span className="sr-only">Edit Transaction</span>
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete Transaction</span>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete this transaction.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(transaction.id)}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+      <TooltipProvider>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="w-[100px] text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.length > 0 ? (
+                data.map((transaction) => {
+                  const isManaged = MANAGED_CATEGORIES.includes(transaction.category)
+
+                  return (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="w-[120px]">
+                        {format(parseISO(transaction.date), 'MMM d, yyyy')}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {transaction.description}
+                      </TableCell>
+                      <TableCell className="capitalize text-muted-foreground">
+                        {transaction.type}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {transaction.category}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          'text-right font-semibold',
+                          transaction.type === 'revenue'
+                            ? 'text-primary'
+                            : 'text-destructive'
+                        )}
+                      >
+                        {transaction.type === 'revenue' ? '+' : '-'}$
+                        {transaction.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={isManaged ? 0 : -1}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={isManaged}
+                                onClick={() => !isManaged && setEditingTransaction(transaction)}
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit Transaction</span>
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          {isManaged && <TooltipContent><p>{getTooltipContent(transaction.category)}</p></TooltipContent>}
+                        </Tooltip>
+
+                        <AlertDialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span tabIndex={isManaged ? 0 : -1}>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" disabled={isManaged}>
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Delete Transaction</span>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                </span>
+                            </TooltipTrigger>
+                            {isManaged && <TooltipContent><p>{getTooltipContent(transaction.category)}</p></TooltipContent>}
+                          </Tooltip>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently
+                                delete this transaction {transaction.saleId ? 'and all linked sale entries.' : '.'}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(transaction.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No transactions found.
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  No transactions found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </TooltipProvider>
 
       <Dialog
         open={!!editingTransaction}

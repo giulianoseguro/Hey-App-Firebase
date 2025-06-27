@@ -7,6 +7,7 @@ export interface Transaction {
   category: string;
   menuItemId?: string; // Link to menu item for sales
   quantity?: number; // Quantity of menu items sold
+  saleId?: string; // Links revenue, cogs, and tax transactions together
 }
 
 export interface InventoryItem {
@@ -33,4 +34,5 @@ export interface PayrollEntry {
   grossPay: number;
   deductions: number;
   netPay: number;
+  transactionId: string; // ID of the associated expense transaction
 }
