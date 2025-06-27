@@ -35,7 +35,7 @@ export function EditMenuItemForm({
   menuItem,
   onFinished,
 }: EditMenuItemFormProps) {
-  const { addMenuItem, updateMenuItem, isDbConnected } = useData()
+  const { addMenuItem, updateMenuItem } = useData()
   const { toast } = useToast()
 
   const form = useForm<FormValues>({
@@ -112,7 +112,7 @@ export function EditMenuItemForm({
           <Button type="button" variant="ghost" onClick={onFinished}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!isDbConnected}>Save Changes</Button>
+          <Button type="submit">Save Changes</Button>
         </div>
       </form>
     </Form>
