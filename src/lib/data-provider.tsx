@@ -86,39 +86,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const seedDatabase = useCallback(async () => {
     if (!db) return;
     try {
-      // Seed Menu Items
+      const updates: { [key: string]: any } = {};
+
       const menuItemsSnapshot = await get(ref(db, 'menuItems'));
       if (!menuItemsSnapshot.exists()) {
         console.log('No menu items found. Seeding database...');
-        const updates: { [key: string]: any } = {};
         defaultMenuItems.forEach(item => {
           const newKey = push(child(ref(db), 'menuItems')).key;
           if (newKey) {
             updates[`/menuItems/${newKey}`] = item;
           }
         });
-        if (Object.keys(updates).length > 0) {
-          await update(ref(db), updates);
-          toast({
-            title: 'Menu Seeded!',
-            description: 'We\'ve added the menu items from your website.',
-          });
-        }
       }
-      // Seed Customizations
+
       const customizationsSnapshot = await get(ref(db, 'customizations'));
        if (!customizationsSnapshot.exists()) {
         console.log('No customizations found. Seeding database...');
-        const updates: { [key: string]: any } = {};
         defaultCustomizations.forEach(item => {
           const newKey = push(child(ref(db), 'customizations')).key;
           if (newKey) {
             updates[`/customizations/${newKey}`] = item;
           }
         });
-        if (Object.keys(updates).length > 0) {
-          await update(ref(db), updates);
-        }
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await update(ref(db), updates);
+        toast({
+          title: 'Default Data Seeded!',
+          description: 'We\'ve added default menu items and customizations.',
+        });
       }
 
     } catch (error) {
@@ -207,9 +204,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     
     const updates: { [key: string]: null } = {};
-    updates[`/transactions/${id}`] = null; // Mark the initial one for deletion
+    updates[`/transactions/${id}`] = null;
 
-    // If it's part of a sale, delete all associated transactions
     if (transactionToDelete.saleId) {
       transactions.forEach(t => {
         if (t.saleId === transactionToDelete.saleId) {
@@ -218,7 +214,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       });
     }
     
-    // If it's an Inventory Purchase, delete the linked inventory item
     if (transactionToDelete.category === 'Inventory Purchase') {
         const linkedInventoryItem = inventory.find(i => i.transactionId === id);
         if (linkedInventoryItem) {
@@ -226,7 +221,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    // If it's a Payroll expense, delete the linked payroll entry
     if (transactionToDelete.category === 'Payroll') {
         const linkedPayrollEntry = payroll.find(p => p.transactionId === id);
         if (linkedPayrollEntry) {
@@ -388,16 +382,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const resetAllData = useCallback(async () => {
     if (!db) throw new Error('Database not connected.');
-    const updates: { [key: string]: null } = {};
-    updates['/transactions'] = null;
-    updates['/inventory'] = null;
-    updates['/payroll'] = null;
-    updates['/menuItems'] = null;
-    updates['/customizations'] = null;
-    await update(ref(db), updates);
-    // Re-seed the database with default items
-    await seedDatabase();
-  }, [seedDatabase]);
+
+    // Prepare default menu items with new keys
+    const menuItemsToSeed: { [key: string]: any } = {};
+    defaultMenuItems.forEach(item => {
+      const newKey = push(child(ref(db), 'menuItems')).key;
+      if (newKey) {
+        menuItemsToSeed[newKey] = item;
+      }
+    });
+
+    // Prepare default customizations with new keys
+    const customizationsToSeed: { [key: string]: any } = {};
+    defaultCustomizations.forEach(item => {
+        const newKey = push(child(ref(db), 'customizations')).key;
+        if (newKey) {
+            customizationsToSeed[newKey] = item;
+        }
+    });
+
+    // Create the full object to set in the database, clearing old data
+    // and adding the seeded data in one atomic operation.
+    const freshData = {
+      transactions: null,
+      inventory: null,
+      payroll: null,
+      menuItems: menuItemsToSeed,
+      customizations: customizationsToSeed,
+    };
+
+    // Atomically set the entire database state
+    await set(ref(db), freshData);
+  }, []);
 
 
   const value = {
@@ -437,3 +453,5 @@ export const useData = () => {
   }
   return context
 }
+
+    
