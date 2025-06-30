@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import type { Transaction } from '@/types'
 import { format, parseISO } from 'date-fns'
-import { Edit, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
+import { Edit, Trash2, ArrowUp, ArrowDown, Upload } from 'lucide-react'
 
 import { useData } from '@/lib/data-provider'
 import { cn } from '@/lib/utils'
@@ -218,6 +218,17 @@ export function TransactionsTable({ data, requestSort, sortConfig }: Transaction
                           {!isEditable && <TooltipContent><p>{getTooltipContent(transaction)}</p></TooltipContent>}
                         </Tooltip>
 
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => console.log('Upload receipt for', transaction.id)}>
+                              <Upload className="h-4 w-4" />
+                              <span className="sr-only">Upload Receipt</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Upload Receipt</TooltipContent>
+                        </Tooltip>
+
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -266,7 +277,7 @@ export function TransactionsTable({ data, requestSort, sortConfig }: Transaction
                 <Card key={transaction.id} className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-2">
-                      <div className="font-medium">{transaction.description}</div>
+                      <div className="font-medium line-clamp-1">{transaction.description}</div>
                       <div className="text-sm text-muted-foreground capitalize">{transaction.category}</div>
                     </div>
                     <div className="flex items-center -mr-2">
@@ -286,6 +297,16 @@ export function TransactionsTable({ data, requestSort, sortConfig }: Transaction
                             </span>
                           </TooltipTrigger>
                           {!isEditable && <TooltipContent><p>{getTooltipContent(transaction)}</p></TooltipContent>}
+                        </Tooltip>
+
+                         <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => console.log('Upload receipt for', transaction.id)}>
+                              <Upload className="h-4 w-4" />
+                              <span className="sr-only">Upload Receipt</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Upload Receipt</TooltipContent>
                         </Tooltip>
 
                         <AlertDialog>
